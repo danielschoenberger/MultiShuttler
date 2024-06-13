@@ -61,8 +61,8 @@ for arch in archs:
         except:
             continue
         #filename = "QASM_files/GHZ/ghz_nativegates_quantinuum_tket_%s.qasm" % num_ion_chains #qft_%squbits.qasm" % num_ion_chains
-        #filename = "QASM_files/full_register_access/full_register_access_%s.qasm" % num_ion_chains
-        filename = "QASM_files/Qft_no_swaps/qft_no_swaps_nativegates_quantinuum_tket_%s.qasm" % num_ion_chains
+        filename = "QASM_files/full_register_access/full_register_access_%s.qasm" % num_ion_chains
+        #filename = "QASM_files/Qft_no_swaps/qft_no_swaps_nativegates_quantinuum_tket_%s.qasm" % num_ion_chains
         max_timesteps = 100000000
 
         print(f"arch: {arch}, seed: {seed}, registers: {number_of_registers}\n")
