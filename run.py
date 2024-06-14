@@ -5,6 +5,7 @@ import numpy as np
 from Cycles import GraphCreator, MemoryZone
 from scheduling import create_initial_sequence, create_starting_config, run_simulation
 
+
 def run_simulation_for_architecture(arch, seeds, pz, max_timesteps, compilation=True):
     """
     Runs simulations for the given architecture and seeds, logs the results.
@@ -26,15 +27,24 @@ def run_simulation_for_architecture(arch, seeds, pz, max_timesteps, compilation=
     for seed in seeds:
         m, n, v, h = arch
         graph = GraphCreator(m, n, v, h, pz).get_graph()
-        n_of_traps = len([trap for trap in graph.edges() if graph.get_edge_data(trap[0], trap[1])["edge_type"] == "trap"])
+        n_of_traps = len(
+            [
+                trap
+                for trap in graph.edges()
+                if graph.get_edge_data(trap[0], trap[1])["edge_type"] == "trap"
+            ]
+        )
         num_ion_chains = math.ceil(n_of_traps / 2)
-        
+
         try:
-            ion_chains, number_of_registers = create_starting_config(num_ion_chains, graph, seed=seed)
-        except:
+            ion_chains, number_of_registers = create_starting_config(
+                num_ion_chains, graph, seed=seed
+            )
+        except ValueError:
             continue
-        
-        filename = f"QASM_files/full_register_access/full_register_access_{num_ion_chains}.qasm"
+
+        directory = "QASM_files/full_register_access/"
+        filename = f"{directory}full_register_access_{num_ion_chains}.qasm"
         print(f"arch: {arch}, seed: {seed}, registers: {number_of_registers}\n")
 
         time_2qubit_gate = 3
@@ -42,8 +52,16 @@ def run_simulation_for_architecture(arch, seeds, pz, max_timesteps, compilation=
         max_chains_in_parking = 3
 
         memorygrid = MemoryZone(
-            m, n, v, h, ion_chains, max_timesteps, max_chains_in_parking, pz,
-            time_2qubit_gate=time_2qubit_gate, time_1qubit_gate=time_1qubit_gate
+            m,
+            n,
+            v,
+            h,
+            ion_chains,
+            max_timesteps,
+            max_chains_in_parking,
+            pz,
+            time_2qubit_gate=time_2qubit_gate,
+            time_1qubit_gate=time_1qubit_gate,
         )
 
         memorygrid.update_distance_map()
@@ -52,7 +70,14 @@ def run_simulation_for_architecture(arch, seeds, pz, max_timesteps, compilation=
         )
         seq_length = len(seq)
         timestep = run_simulation(
-            memorygrid, max_timesteps, seq, flat_seq, dag_dep, next_node_initial, max_length=10, show_plot=False
+            memorygrid,
+            max_timesteps,
+            seq,
+            flat_seq,
+            dag_dep,
+            next_node_initial,
+            max_length=10,
+            show_plot=False,
         )
         timestep_arr.append(timestep)
         cpu_time = time.time() - start_time
@@ -60,7 +85,16 @@ def run_simulation_for_architecture(arch, seeds, pz, max_timesteps, compilation=
 
     return timestep_arr, cpu_time_arr, number_of_registers, n_of_traps, seq_length
 
-def log_results(arch, timestep_arr, cpu_time_arr, number_of_registers, n_of_traps, seq_length, compilation=True):
+
+def log_results(
+    arch,
+    timestep_arr,
+    cpu_time_arr,
+    number_of_registers,
+    n_of_traps,
+    seq_length,
+    compilation=True,
+):
     """
     Logs the results of the simulation to a file.
 
@@ -74,33 +108,49 @@ def log_results(arch, timestep_arr, cpu_time_arr, number_of_registers, n_of_trap
         compilation (bool): Compilation flag (Gate Selection Step).
     """
     timestep_mean = np.mean(timestep_arr)
-    timestep_var = np.var(timestep_arr)
+    np.var(timestep_arr)
     cpu_time_mean = np.mean(cpu_time_arr)
-    
+
     file_path = Path("results.txt")
     try:
         with file_path.open("a") as file:
             line = (
-                f"& {arch[0]} {arch[1]} {arch[2]} {arch[3]} & {number_of_registers}/{n_of_traps} & {seq_length} "
-                f"& {timestep_mean} & {cpu_time_mean} s & Gate Selection={compilation} \\\\"
+                f"& {arch} & {number_of_registers}/{n_of_traps} & {seq_length} "
+                f"& {timestep_mean} & {cpu_time_mean} s & Gate Sel={compilation} \\\\"
             )
             file.write(f"array ts: {timestep_arr}\n" + line + "\n\n")
-    except:
+    except FileNotFoundError:
         pass
+
 
 def main():
     archs = [
-        [6, 2, 1, 1],
+        [2, 6, 1, 1],
     ]
     seeds = [0, 1, 2, 3, 4]
-    pz = 'outer'
+    pz = "outer"
     max_timesteps = 100000000
 
     for arch in archs:
-        timestep_arr, cpu_time_arr, number_of_registers, n_of_traps, seq_length = run_simulation_for_architecture(
+        (
+            timestep_arr,
+            cpu_time_arr,
+            number_of_registers,
+            n_of_traps,
+            seq_length,
+        ) = run_simulation_for_architecture(
             arch, seeds, pz, max_timesteps, compilation=True
         )
-        log_results(arch, timestep_arr, cpu_time_arr, number_of_registers, n_of_traps, seq_length, compilation=True)
+        log_results(
+            arch,
+            timestep_arr,
+            cpu_time_arr,
+            number_of_registers,
+            n_of_traps,
+            seq_length,
+            compilation=True,
+        )
+
 
 if __name__ == "__main__":
     main()
