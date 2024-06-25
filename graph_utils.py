@@ -71,29 +71,29 @@ def get_path_to_node(
     return edge_path
 
 
-def calc_dist_to_pz(nx_g_creator, edge_idx):
-    edge_idc = get_idc_from_idx(nx_g_creator.idc_dict, edge_idx)
-    node1, node2 = edge_idc[0], edge_idc[1]
+# def calc_dist_to_pz(nx_g_creator, edge_idx):
+#     edge_idc = get_idc_from_idx(nx_g_creator.idc_dict, edge_idx)
+#     node1, node2 = edge_idc[0], edge_idc[1]
 
-    path1 = get_path_to_node(
-        nx_g_creator.networkx_graph,
-        node1,
-        nx_g_creator.processing_zone,
-        exclude_first_entry_connection=True,
-    )
-    path2 = get_path_to_node(
-        nx_g_creator.networkx_graph,
-        node2,
-        nx_g_creator.processing_zone,
-        exclude_first_entry_connection=True,
-    )
-    if edge_idx == get_idx_from_idc(nx_g_creator.idc_dict, nx_g_creator.parking_edge):
-        return 0
-    if edge_idx == get_idx_from_idc(
-        nx_g_creator.idc_dict, nx_g_creator.first_entry_connection_from_pz
-    ):
-        return max(len(path1), len(path2)) + 1
-    return min(len(path1), len(path2)) + 1
+#     path1 = get_path_to_node(
+#         nx_g_creator.networkx_graph,
+#         node1,
+#         nx_g_creator.processing_zone,
+#         exclude_first_entry_connection=True,
+#     )
+#     path2 = get_path_to_node(
+#         nx_g_creator.networkx_graph,
+#         node2,
+#         nx_g_creator.processing_zone,
+#         exclude_first_entry_connection=True,
+#     )
+#     if edge_idx == get_idx_from_idc(nx_g_creator.idc_dict, nx_g_creator.parking_edge):
+#         return 0
+#     if edge_idx == get_idx_from_idc(
+#         nx_g_creator.idc_dict, nx_g_creator.first_entry_connection_from_pz
+#     ):
+#         return max(len(path1), len(path2)) + 1
+#     return min(len(path1), len(path2)) + 1
 
 
 class GraphCreator:
@@ -116,8 +116,6 @@ class GraphCreator:
         self._remove_vertical_edges(networkx_graph)
         self._remove_horizontal_nodes(networkx_graph)
         self._set_junction_nodes(networkx_graph)
-        if self.pz == "mid":
-            self._remove_mid_part(networkx_graph)
         nx.set_edge_attributes(networkx_graph, "trap", "edge_type")
 
         return networkx_graph

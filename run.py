@@ -3,17 +3,20 @@ import time
 from pathlib import Path
 import numpy as np
 from Cycles import GraphCreator, MemoryZone
-from scheduling import create_initial_sequence, create_starting_config, run_simulation
+from scheduling import create_initial_sequence, create_starting_config, schedule
+from partition import partition
+
+show_plot = True
+plot_filename = "plot.png"
 
 
-def run_simulation_for_architecture(arch, seeds, pz, max_timesteps, compilation=True):
+def run_simulation_for_architecture(arch, seeds, max_timesteps, compilation=True):
     """
     Runs simulations for the given architecture and seeds, logs the results.
 
     Args:
         arch (list): Architecture parameters.
         seeds (list): List of seed values.
-        pz (str): Position of Processing zone.
         max_timesteps (int): Maximum timesteps.
         compilation (bool): Compilation flag (Gate Selection Step).
 
@@ -26,7 +29,7 @@ def run_simulation_for_architecture(arch, seeds, pz, max_timesteps, compilation=
 
     for seed in seeds:
         m, n, v, h = arch
-        graph = GraphCreator(m, n, v, h, pz).get_graph()
+        graph = GraphCreator(m, n, v, h).get_graph()
         n_of_traps = len(
             [
                 trap
@@ -59,26 +62,24 @@ def run_simulation_for_architecture(arch, seeds, pz, max_timesteps, compilation=
             ion_chains,
             max_timesteps,
             max_chains_in_parking,
-            pz,
             time_2qubit_gate=time_2qubit_gate,
             time_1qubit_gate=time_1qubit_gate,
         )
 
-        memorygrid.update_distance_map()
-        seq, flat_seq, dag_dep, next_node_initial = create_initial_sequence(
-            memorygrid.distance_map, filename, compilation=compilation
-        )
+        partition_for_scheduling = partition(filename, 2)
+        print(partition_for_scheduling)
+        # memorygrid.update_distance_map()
+        seq, flat_seq = create_initial_sequence(filename)
         seq_length = len(seq)
-        timestep = run_simulation(
+
+        timestep = schedule(
             memorygrid,
             max_timesteps,
-            seq,
-            flat_seq,
-            dag_dep,
-            next_node_initial,
-            max_length=10,
-            show_plot=False,
+            partition_for_scheduling,
+            show_plot,
+            plot_filename,
         )
+
         timestep_arr.append(timestep)
         cpu_time = time.time() - start_time
         cpu_time_arr.append(cpu_time)
@@ -125,10 +126,9 @@ def log_results(
 
 def main():
     archs = [
-        [2, 6, 1, 1],
+        [4, 4, 2, 2],
     ]
-    seeds = [0, 1, 2, 3, 4]
-    pz = "outer"
+    seeds = [0]  # , 1, 2, 3, 4]
     max_timesteps = 100000000
 
     for arch in archs:
@@ -139,7 +139,7 @@ def main():
             n_of_traps,
             seq_length,
         ) = run_simulation_for_architecture(
-            arch, seeds, pz, max_timesteps, compilation=True
+            arch, seeds, max_timesteps, compilation=True
         )
         log_results(
             arch,
