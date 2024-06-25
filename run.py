@@ -9,13 +9,13 @@ from partition import partition
 show_plot = True
 plot_filename = "plot.png"
 
-
-def run_simulation_for_architecture(arch, seeds, max_timesteps, compilation=True):
+def run_simulation_for_architecture(arch, pzs, seeds, max_timesteps, compilation=True):
     """
     Runs simulations for the given architecture and seeds, logs the results.
 
     Args:
         arch (list): Architecture parameters.
+        pzs (list): List of Processing Zones.
         seeds (list): List of seed values.
         max_timesteps (int): Maximum timesteps.
         compilation (bool): Compilation flag (Gate Selection Step).
@@ -66,19 +66,16 @@ def run_simulation_for_architecture(arch, seeds, max_timesteps, compilation=True
             time_1qubit_gate=time_1qubit_gate,
         )
 
-        partition_for_scheduling = partition(filename, 2)
+        partition_for_scheduling = partition(filename, len(pzs))
         print(partition_for_scheduling)
+
         # memorygrid.update_distance_map()
-        seq, flat_seq = create_initial_sequence(filename)
+        seq, flat_seq = create_initial_sequence(
+            filename
+        )
         seq_length = len(seq)
 
-        timestep = schedule(
-            memorygrid,
-            max_timesteps,
-            partition_for_scheduling,
-            show_plot,
-            plot_filename,
-        )
+        timestep = schedule(memorygrid, max_timesteps, partition_for_scheduling, show_plot, plot_filename)
 
         timestep_arr.append(timestep)
         cpu_time = time.time() - start_time
@@ -128,8 +125,9 @@ def main():
     archs = [
         [4, 4, 2, 2],
     ]
-    seeds = [0]  # , 1, 2, 3, 4]
+    seeds = [0]#, 1, 2, 3, 4]
     max_timesteps = 100000000
+    pzs = [1, 5]
 
     for arch in archs:
         (
@@ -139,7 +137,7 @@ def main():
             n_of_traps,
             seq_length,
         ) = run_simulation_for_architecture(
-            arch, seeds, max_timesteps, compilation=True
+            arch, pzs, seeds, max_timesteps, compilation=True
         )
         log_results(
             arch,
