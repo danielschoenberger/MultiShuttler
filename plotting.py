@@ -2,20 +2,19 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
 
-from graph_utils import get_idc_from_idx, get_idx_from_idc, create_idc_dictionary
+from graph_utils import get_idx_from_idc
 
-
-# plotting
+# Plotting function
 def plot_state(
     graph,
-    ion_moves,
     labels,
     plot_ions=True,
     show_plot=False,
     save_plot=False,
+    plot_cycle=False,
     filename="",
 ):
-    idc_dict = create_idc_dictionary(graph)
+    idc_dict = graph.idc_dict
     pos = {(x, y): (y, -x) for i, (x, y) in enumerate(list(graph.nodes()))}
     if plot_ions is True:
         pass
@@ -23,7 +22,6 @@ def plot_state(
     else:
         edge_labels = {}
         for idc in graph.edges():
-            # pass
             edge_labels[idc] = "$e_{%s}$" % get_idx_from_idc(idc_dict, idc)
 
     for edge_idc in graph.edges():
@@ -33,7 +31,7 @@ def plot_state(
         ion_holder = {}
         colors = []
         np.random.seed(0)
-        for _ in range(len(ion_moves)):
+        for _ in range(len(graph.edges)):
             r = np.round(np.random.rand(), 1)
             g = np.round(np.random.rand(), 1)
             b = np.round(np.random.rand(), 1)
@@ -41,29 +39,34 @@ def plot_state(
             colors.append((r, g, b))
         np.random.seed()
 
-    for i, ion_place in enumerate(ion_moves):
-        ion_edge_idc = get_idc_from_idx(idc_dict, ion_place)
-        try:
-            ion_holder[ion_place].append(i)
-        except KeyError:
-            ion_holder[ion_place] = [i]
-    for i, ion_place in enumerate(ion_moves):
-        ion_edge_idc = get_idc_from_idx(idc_dict, ion_place)
-        graph.add_edge(
-            ion_edge_idc[0],
-            ion_edge_idc[1],
-            ion_chain=ion_holder[ion_place],
-            color=colors[i],
-        )
+    for edge in graph.edges:
+        ions = graph.edges[edge]['ions']
+        for ion in ions:
+            try:
+                ion_holder[edge].append(ion)
+            except KeyError:
+                ion_holder[edge] = [ion]
+
+    for edge in graph.edges:
+        if edge in ion_holder:
+            graph.add_edge(
+                edge[0],
+                edge[1],
+                ion_chain=ion_holder[edge],
+                color=colors[ion_holder[edge][0]],
+            )
+
+    if plot_cycle is not False:
+        for edge in plot_cycle:
+            graph.add_edge(edge[0], edge[1], color="r")
 
     edge_color = nx.get_edge_attributes(graph, "color").values()
     node_color = list(nx.get_node_attributes(graph, "color").values())
     edge_labels = nx.get_edge_attributes(graph, "ion_chain")
 
-    # plt.figure(figsize=(25, 15))
     plt.figure(
         figsize=(max(pos.keys())[1] * 2, max(pos.keys())[0] * 2)
-    )  # self.n * self.ion_chain_size_horizontal, self.m * self.ion_chain_size_vertical))
+    )
     nx.draw_networkx(
         graph,
         pos=pos,
@@ -76,10 +79,11 @@ def plot_state(
     )
     nx.draw_networkx_edge_labels(graph, pos, edge_labels)
 
-    # reset edge labels
-    for i, ion in enumerate(ion_moves):
-        ion_edge_idc = get_idc_from_idx(idc_dict, ion)
-        graph.add_edge(ion_edge_idc[0], ion_edge_idc[1], ion_chain="", color=colors[i])
+    # reset edge labels for following iterations?
+    for edge in graph.edges:
+        if edge in ion_holder:
+            graph.add_edge(edge[0], edge[1], ion_chain="", color="k")
+
 
     labels0, labels1 = labels
     plt.plot([], [], label=labels0)

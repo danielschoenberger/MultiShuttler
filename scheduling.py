@@ -1,524 +1,206 @@
-import random
-from datetime import datetime
-from pathlib import Path
-
-
-from compilation import is_qasm_file, parse_qasm
-from Cycles import get_idx_from_idc
-from plotting import plot_state
-
-save_plot = False
-if save_plot:
-    # Create a folder for each run with a timestamp (plot widget)
-    run_folder = Path(f'plots/run_{datetime.now().strftime("%Y%m%d_%H%M%S")}')
-    run_folder.mkdir(parents=True, exist_ok=True)
-else:
-    run_folder = ""
-
-
-def create_starting_config(n_of_chains, graph, seed=None):
-    if seed is not None:
-        random.seed(seed)
-        starting_traps = []
-        traps = [
-            edges
-            for edges in graph.edges()
-            if graph.get_edge_data(edges[0], edges[1])["edge_type"] == "trap"
-        ]
-        n_of_traps = len(traps)
-        random_starting_traps = random.sample(range(n_of_traps), (n_of_chains))
-        for trap in random_starting_traps:
-            starting_traps.append(traps[trap])
-    else:
-        starting_traps = [
-            edges
-            for edges in graph.edges()
-            if graph.get_edge_data(edges[0], edges[1])["edge_type"] == "trap"
-        ][:n_of_chains]
-    number_of_registers = len(starting_traps)
-
-    # place ions onto traps (ion0 on starting_trap0)
-    ion_chains = {}
-    for ion, idc in enumerate(starting_traps):
-        ion_chains[ion] = idc
-
-    return ion_chains, number_of_registers
-
-
-def create_initial_sequence(filename):
-    # assert file is a qasm file
-    assert is_qasm_file(filename), "The file is not a valid QASM file."
-
-    seq = parse_qasm(filename)
-    flat_seq = [item for sublist in seq for item in sublist]
-
-    return seq, flat_seq
-
-
-def schedule(memorygrid, max_timesteps, partition, show_plot, plot_filename):
-    timestep = 0
-    while timestep < max_timesteps:
-        plot_state(
-            memorygrid.graph,
-            [
-                get_idx_from_idc(memorygrid.idc_dict, edge_idc)
-                for edge_idc in memorygrid.ion_chains.values()
-            ],
-            labels=[timestep, None],
-            show_plot=show_plot,
-            save_plot=save_plot,
-            filename=[plot_filename if save_plot else None][0],
-        )
-        timestep += 1
-        if timestep == 1:
-            print("timestep: ", timestep)
-            return timestep
-
-    print("timestep: ", timestep)
-    return timestep
-
-
-# def preprocess(memorygrid, sequence):
-#     # TODO check if this loop is needed (use unique_sequence instead of sequence now)
-#     # TODO combine with create_move_list? But max_length is different
-#     # unique sequence is sequence without repeating elements (for move_list and 2-qubit gates)
-#     unique_sequence = []
-#     for seq_elem in sequence:
-#         if seq_elem not in unique_sequence:
-#             unique_sequence.append(seq_elem)
-#     sequence = unique_sequence
-
-#     need_rotate = [False] * len(sequence)
-#     while sum(need_rotate) < len(sequence):
-#         for i, rotate_chain in enumerate(sequence):
-#             edge_idc = memorygrid.ion_chains[rotate_chain]
-#             next_edge = memorygrid.find_next_edge(edge_idc)
-#             state_edges_idx = memorygrid.get_state_idxs()
-
-#             if (
-#                 memorygrid.have_common_junction_node(edge_idc, next_edge) is False
-#                 and get_idx_from_idc(memorygrid.idc_dict, next_edge) not in state_edges_idx
-#             ):
-#                 memorygrid.ion_chains[rotate_chain] = next_edge
-#             else:
-#                 need_rotate[i] = True
-
-#     return memorygrid
-
-
-# def create_move_list(memorygrid, sequence, max_length=10):
-#     """
-#     max_length: max length of move_list (if sequence is longer than max_length, only first max_length elements are considered)
-#     """
-#     # unique sequence is sequence without repeating elements (for move_list and 2-qubit gates)
-#     unique_sequence = []
-#     for seq_elem in sequence:
-#         if seq_elem not in unique_sequence:
-#             unique_sequence.append(seq_elem)
-#             if len(unique_sequence) == max_length:
-#                 break
-
-#     path_length_sequence = {}
-#     move_list = []
-#     for i, rotate_chain in enumerate(unique_sequence):
-#         edge_idc = memorygrid.ion_chains[rotate_chain]
-#         # TODO shortest path here maybe not optimal?
-#         path_to_go = nx.shortest_path(
-#             memorygrid.graph,
-#             edge_idc[0],
-#             memorygrid.graph_creator.processing_zone,
-#             lambda _, __, edge_attr_dict: (edge_attr_dict["edge_type"] == "first_entry_connection") * 1e8 + 1,
-#         )
-#         path_length_sequence[rotate_chain] = len(path_to_go)
-
-#         if i == 0 or sum(
-#             np.array([path_length_sequence[rotate_chain]] * len(move_list))
-#             > np.array([path_length_sequence[chain] for chain in move_list])
-#         ) == len(move_list):
-#             move_list.append(rotate_chain)
-
-#     # # add exit edges (needed in rare cases, when chain was moved into exit but dag dependency changed right after that -> chain is in exit but not in move sequence)
-#     # for exit_connection_idc in memorygrid.graph_creator.path_to_pz:
-#     #     ion = memorygrid.find_chain_in_edge(exit_connection_idc)
-#     #     if ion is not None and ion not in move_list:
-#     #         move_list.insert(0, ion)
-#     # NEW: add chains in exit connections to move_list as below for entry connections
-#     # -> for rare case that dag changed -> chain in exit connection was placed in front
-#     # -> overwrote other chain in exit connection which was still in move list but now later than the one that was inserted in front
-#     chains_in_exit_connections = []
-#     for ion, chain_edge_idx in enumerate(memorygrid.get_state_idxs()):
-#         if chain_edge_idx in memorygrid.graph_creator.path_to_pz_idxs:
-#             chains_in_exit_connections.insert(0, ion)
-
-#     if len(chains_in_exit_connections) > 0:
-#         for ion in chains_in_exit_connections:
-#             with contextlib.suppress(Exception):
-#                 move_list.remove(ion)
-#             move_list = [ion, *move_list]
-
-#     # get chains in all entry edges and place in front
-#     # chain in entry must move out
-#     chains_in_entry_connections = []
-#     for ion, chain_edge_idx in enumerate(memorygrid.get_state_idxs()):
-#         if chain_edge_idx in memorygrid.graph_creator.path_from_pz_idxs:
-#             if chain_edge_idx == get_idx_from_idc(memorygrid.idc_dict, memorygrid.graph_creator.entry_edge):
-#                 # place chain in entry at the end of move_list -> so later looping over list leads to chain in entry being first
-#                 chains_in_entry_connections.append(ion)
-#             else:
-#                 chains_in_entry_connections.insert(0, ion)
-
-#     if len(chains_in_entry_connections) > 0:
-#         for ion in chains_in_entry_connections:
-#             with contextlib.suppress(Exception):
-#                 move_list.remove(ion)
-#             move_list = [ion, *move_list]
-
-#     return move_list
-
-
-# def create_circles_for_moves(memorygrid, move_list, flat_seq, gate_execution_finished, new_gate_starting):
-#     ######### CREATE CIRCLES #########
-#     ### create circles for all chains in move_list (dictionary with chain as key and circle_idcs as value)
-#     rotate_entry = False
-#     chain_to_park = memorygrid.find_chain_in_edge(memorygrid.graph_creator.path_to_pz[-1])
-#     chain_to_move_out_of_pz = None
-#     if memorygrid.count_chains_in_parking() < memorygrid.max_num_parking or gate_execution_finished:
-#         parking_open = True
-#     else:
-#         parking_open = False
-
-#     all_circles = {}
-#     # need to find next_edges before for bfs search of "out of entry move"
-#     next_edges = {}
-#     for rotate_chain in move_list:
-#         edge_idc = memorygrid.ion_chains[rotate_chain]
-#         # if chain is needed again (is present in rest of sequence) -> move (only out of entry) towards exit instead of top left
-#         towards = "exit" if rotate_chain in flat_seq[1:] else (0, 0)
-#         next_edges[rotate_chain] = memorygrid.find_next_edge(edge_idc, towards=towards)
-
-#     in_and_into_exit_moves = {}
-#     for rotate_chain in move_list:
-#         edge_idc = memorygrid.ion_chains[rotate_chain]
-#         next_edge = next_edges[rotate_chain]
-
-#         # make edge_idc and next_edge consistent
-#         edge_idc, next_edge = memorygrid.find_ordered_edges(edge_idc, next_edge)
-
-#         # moves in pz
-#         if get_idx_from_idc(memorygrid.idc_dict, next_edge) in [
-#             *memorygrid.graph_creator.path_to_pz_idxs,
-#             get_idx_from_idc(memorygrid.idc_dict, memorygrid.graph_creator.parking_edge),
-#         ]:
-#             in_and_into_exit_moves[rotate_chain] = edge_idc
-#             all_circles[rotate_chain] = [edge_idc, next_edge]
-#             # block moves to pz if parking is full (now blocks if parking not open and chain moving in exit and its next edge is in state_idxs)
-#             if (
-#                 #     get_idx_from_idc(memorygrid.idc_dict, next_edge)
-#                 #     in [
-#                 #         *memorygrid.graph_creator.path_to_pz_idxs,
-#                 #         get_idx_from_idc(memorygrid.idc_dict, memorygrid.graph_creator.parking_edge),
-#                 #     ]
-#                 #     and
-#                 parking_open
-#                 is False
-#             ) and (get_idx_from_idc(memorygrid.idc_dict, next_edge) in memorygrid.state_idxs):
-#                 all_circles[rotate_chain] = [edge_idc, edge_idc]
-
-#             # #) and (get_idx_from_idc(memorygrid.idc_dict, next_edge) in stop_exit_edges or stop_exit_edges == []):
-
-#             #     # old
-#             #     # all_circles[rotate_chain] = [edge_idc, edge_idc]
-#             #     # # needed later for blocking moves to parking
-#             #     # stop_exit_edges.append(get_idx_from_idc(memorygrid.idc_dict, edge_idc))
-
-#             #     # new
-#             #     # needed later for blocking moves to parking
-#             #     stop_exit_edges.append(get_idx_from_idc(memorygrid.idc_dict, edge_idc))
-#             #     print('stop_exit_edges: ', stop_exit_edges, 'rotate_chain: ', rotate_chain)
-#             #     #((20, 20.0), (21, 21.0))
-#             #     #((21, 21.0), (22, 22.0))
-#             #     # should only stop if next edge is in stop_exit_edges -> if [] then no stop
-#             #     if len(stop_exit_edges) > 1:
-#             #         all_circles[rotate_chain] = [edge_idc, edge_idc]
-#             #         print('rotate_chain1: ', rotate_chain, stop_exit_edges)
-
-#         # moves without circle
-#         # also if chain is moving out of entry connections (entry is handled in create_outer_circle)
-#         elif (
-#             not memorygrid.check_if_edge_is_filled(next_edge)
-#             or get_idx_from_idc(memorygrid.idc_dict, edge_idc) in memorygrid.graph_creator.path_from_pz_idxs[:-1]
-#         ):
-#             all_circles[rotate_chain] = [edge_idc, next_edge]
-
-#         # moves with circle
-#         else:
-#             # create circle (deleted in create_outer_circle: in parking circle is a "stop move")
-#             all_circles[rotate_chain] = memorygrid.create_outer_circle(edge_idc, next_edge, next_edges.values())
-
-#     # move chain out of parking edge if needed
-#     chains_in_parking = memorygrid.find_chains_in_parking()
-
-#     # if pz full and no chain is moving out (not in state_idxs entry edge) but chain is moving in
-#     if memorygrid.count_chains_in_parking() >= memorygrid.max_num_parking and chain_to_park is not None:
-#         # if gate finished -> new space could be in parking
-#         if gate_execution_finished:
-#             # find least important chain in parking edge
-#             chain_to_move_out_of_pz = memorygrid.find_least_import_chain_in_parking(
-#                 flat_seq, [*chains_in_parking, chain_to_park]
-#             )
-#             if chain_to_move_out_of_pz != chain_to_park:
-#                 # move it to entry
-#                 rotate_entry = True
-#                 # change its path/circle to a stop move -> will be later placed into entry
-#                 all_circles[chain_to_move_out_of_pz] = [
-#                     memorygrid.graph_creator.path_from_pz[0],
-#                     memorygrid.graph_creator.path_from_pz[0],
-#                 ]
-
-#             # else -> chain_to_park not needed right now
-#             # if new gate can be executed -> bring everything to a stop in enxit
-#             elif new_gate_starting:
-#                 # if chain to park should move to entry -> all chains with next edge in exit -> stop move
-#                 for chain, edge_idc in in_and_into_exit_moves.items():
-#                     all_circles[chain] = [edge_idc, edge_idc]
-#                 # maybe already covered above
-#                 all_circles[chain_to_move_out_of_pz] = (
-#                     memorygrid.graph_creator.path_to_pz[-1],
-#                     memorygrid.graph_creator.path_to_pz[-1],
-#                 )
-#             # else -> no new gate possible with only parking chains
-#             # -> but also chain can't move to parking since it is least important
-#             # -> should be rare edge case -> chain moves from exit to entry
-#             else:
-#                 rotate_entry = True
-#                 # change its path/circle to a stop move -> will be later placed into entry
-#                 all_circles[chain_to_move_out_of_pz] = [
-#                     memorygrid.graph_creator.path_from_pz[0],
-#                     memorygrid.graph_creator.path_from_pz[0],
-#                 ]
-#         else:
-#             # else bring everything to a stop in exit
-#             # same as above
-#             for chain, edge_idc in in_and_into_exit_moves.items():
-#                 all_circles[chain] = [edge_idc, edge_idc]
-
-#             # maybe already covered above
-#             # all_circles[chain_to_move_out_of_pz] = (
-#             #     memorygrid.graph_creator.path_to_pz[-1],
-#             #     memorygrid.graph_creator.path_to_pz[-1],
-#             # )
-
-#     return all_circles, rotate_entry, chain_to_move_out_of_pz
-
-
-# def find_movable_circles(memorygrid, all_circles, move_list):
-#     ######### FIND CIRCLES THAT CAN MOVE #########
-#     # find circles that can move while first seq ion is moving
-#     nonfree_circles = memorygrid.find_nonfree_and_free_circle_idxs(all_circles)
-#     free_circle_seq_idxs = [move_list[0]]
-#     for seq_circ in move_list[1:]:
-#         nonfree = False
-#         for mov_circ in free_circle_seq_idxs:
-#             if (seq_circ, mov_circ) in nonfree_circles or (mov_circ, seq_circ) in nonfree_circles:
-#                 nonfree = True
-#                 break
-#         if nonfree is False:
-#             free_circle_seq_idxs.append(seq_circ)
-#     return free_circle_seq_idxs
-
-
-# def rotate_free_circles(memorygrid, all_circles, free_circle_seq_idxs, rotate_entry, chain_to_move_out_of_pz):
-#     ######### ROTATE CIRCLES #########
-#     # need circles given in idxs for rotate function
-#     free_circle_idxs = {}
-#     for seq_idx in free_circle_seq_idxs:
-#         free_circle_idxs[seq_idx] = [
-#             get_idx_from_idc(memorygrid.idc_dict, edge_idc) for edge_idc in all_circles[seq_idx]
-#         ]
-#         # rotate chains
-#         _new_state_dict = memorygrid.rotate(free_circle_idxs[seq_idx])
-#     if rotate_entry:
-#         memorygrid.ion_chains[chain_to_move_out_of_pz] = memorygrid.graph_creator.path_from_pz[0]
-
-
-# def update_sequence_and_process_gate(
-#     memorygrid,
-#     gate_execution_finished,
-#     new_gate_starting,
-#     dag_dep,
-#     next_node,
-#     timestep,
-#     seq,
-#     flat_seq,
-#     time_in_pz_counter,
-#     next_gate_is_two_qubit_gate,
-#     show_plot,
-# ):
-#     gate = seq[0]
-#     chains_in_parking = memorygrid.find_chains_in_parking()
-#     time_gate = memorygrid.time_2qubit_gate if next_gate_is_two_qubit_gate else memorygrid.time_1qubit_gate
-
-#     plot_filename = Path(run_folder) / f"plot_{timestep:03d}.pdf"
-
-#     ######### UPDATE SEQUENCE / PROCESS GATE #########
-#     gate = seq[0]
-#     chains_in_parking = memorygrid.find_chains_in_parking()
-#     if sum((gate_element in chains_in_parking) for gate_element in gate) == len(gate):
-#         # new TODO use gate_execution_finished or not?
-#         gate_execution_finished = False
-
-#         time_in_pz_counter += 1
-#         plot_state(memorygrid.graph,
-#             [get_idx_from_idc(memorygrid.idc_dict, edge_idc) for edge_idc in memorygrid.ion_chains.values()],
-#             labels=[
-#                 "time step %s" % timestep,
-#                 f"seq elem {seq[0]} execution",
-#             ],
-#             show_plot=show_plot,
-#             save_plot=save_plot,
-#             filename=[plot_filename if save_plot else None][0],
-#         )
-
-#         print(f"time step: {timestep}, gate {seq[0]} is executed")
-#         time_gate = memorygrid.time_2qubit_gate if next_gate_is_two_qubit_gate else memorygrid.time_1qubit_gate
-
-#         if time_in_pz_counter == time_gate:
-#             ######### END IF SEQUENCE IS FINISHED #########
-#             if len(seq) == 1:
-#                 print("\nFull Sequence executed")
-#                 return (
-#                     True,
-#                     gate_execution_finished,
-#                     new_gate_starting,
-#                     seq,
-#                     flat_seq,
-#                     time_in_pz_counter,
-#                     dag_dep,
-#                     next_node,
-#                     next_gate_is_two_qubit_gate,
-#                 )
-
-#             # for _ in gate:
-#             #     flat_seq.pop(0)
-#             time_in_pz_counter = 0
-#             gate_execution_finished = True
-
-#             if dag_dep is None:
-#                 assert next_node is None
-#                 seq.pop(0)
-#             else:
-#                 # update dag
-#                 remove_node(dag_dep, next_node)
-#                 dag_dep = manual_copy_dag(dag_dep)
-#                 new_dist_map = memorygrid.update_distance_map()
-#                 gate_ids, next_node = update_sequence(dag_dep, new_dist_map)
-#                 seq = [tuple(gate) for gate in gate_ids]
-
-#             flat_seq = [item for sublist in seq for item in sublist]
-#             next_gate_is_two_qubit_gate = len(seq[0]) == 2
-
-#             # need counter that tracks if new gate can start with chains from parking
-#             # -> if last entry connection is blocked with chain that is less important than chains in parking
-#             # -> move chain from exit to entry without parking
-#             chains_in_parking = memorygrid.find_chains_in_parking()
-#             for gate_element in seq[0]:
-#                 new_gate_starting = gate_element in chains_in_parking
-
-#     else:
-#         plot_state(memorygrid.graph,
-#             [get_idx_from_idc(memorygrid.idc_dict, edge_idc) for edge_idc in memorygrid.ion_chains.values()],
-#             labels=["time step %s" % timestep, f"next seq elem: {seq[0]}"],
-#             show_plot=show_plot,
-#             save_plot=save_plot,
-#             filename=[plot_filename if save_plot else None][0],
-#         )
-
-#     return (
-#         False,
-#         gate_execution_finished,
-#         new_gate_starting,
-#         seq,
-#         flat_seq,
-#         time_in_pz_counter,
-#         dag_dep,
-#         next_node,
-#         next_gate_is_two_qubit_gate,
-#     )
-
-
-# def check_duplicates(lst, memorygrid, parking_idc, max_number_parking):
-#     parking_idx = get_idx_from_idc(memorygrid.idc_dict, parking_idc)
-
-#     # Count occurrences of each integer
-#     counts = Counter(lst)
-
-#     for num, count in counts.items():
-#         if num != parking_idx and count > 1:
-#             message = f"More than one chain in edge {get_idc_from_idx(memorygrid.idc_dict, num)}!"
-#             raise AssertionError(message)
-#         if num == parking_idx and count > max_number_parking:
-#             message = (
-#                 f"More than {max_number_parking} chains in parking edge {get_idc_from_idx(memorygrid.idc_dict, num)}!"
-#             )
-#             raise AssertionError(message)
-
-
-# def run_simulation(memorygrid, max_timesteps, seq, flat_seq, dag_dep, next_node_initial, max_length, show_plot):
-#     time_in_pz_counter = 0
-#     next_gate_is_two_qubit_gate = len(seq[0]) == 2
-#     gate_execution_finished = True
-#     new_gate_starting = False
-#     timestep = 0
-#     next_node = next_node_initial
-#     while timestep < max_timesteps:
-#         print("timestep: ", timestep)
-#         rotate_entry = False
-
-#         # update state idxs
-#         state_idxs = memorygrid.get_state_idxs()
-#         # assert check that each edge has only one chain (parking edge at most max parking)
-#         #check_duplicates(state_idxs, memorygrid, memorygrid.graph_creator.parking_edge, memorygrid.max_num_parking)
-#         # preprocess (move chains within junctions)
-#         memorygrid = preprocess(memorygrid, flat_seq)
-#         # move list
-#         move_list = create_move_list(memorygrid, flat_seq, max_length)
-#         # memorygrid.state_idxs are updated in create_move_list
-#         # create circles for moves
-#         all_circles, rotate_entry, chain_to_move_out_of_pz = create_circles_for_moves(
-#             memorygrid, move_list, flat_seq, gate_execution_finished, new_gate_starting
-#         )
-#         new_gate_starting = False
-#         # find movable circles
-#         free_circle_seq_idxs = find_movable_circles(memorygrid, all_circles, move_list)
-#         # rotate free circles
-#         rotate_free_circles(memorygrid, all_circles, free_circle_seq_idxs, rotate_entry, chain_to_move_out_of_pz)
-#         # update sequence and process gate
-#         (
-#             finished,
-#             gate_execution_finished,
-#             new_gate_starting,
-#             seq,
-#             flat_seq,
-#             time_in_pz_counter,
-#             dag_dep,
-#             next_node,
-#             next_gate_is_two_qubit_gate,
-#         ) = update_sequence_and_process_gate(
-#             memorygrid,
-#             gate_execution_finished,
-#             new_gate_starting,
-#             dag_dep,
-#             next_node,
-#             timestep,
-#             seq,
-#             flat_seq,
-#             time_in_pz_counter,
-#             next_gate_is_two_qubit_gate,
-#             show_plot,
-#         )
-#         if finished:
-#             return timestep
-#         timestep += 1
-
-#         state_idxs = memorygrid.get_state_idxs()
-#     return None
+import numpy as np
+from more_itertools import pairwise, distinct_combinations
+from Cycles import get_ion_chains, get_edge_state, find_path_edge_to_edge, find_next_edge, find_ordered_edges, check_if_edge_is_filled, create_cycle, have_common_junction_node
+from graph_utils import get_idx_from_idc
+
+class ProcessingZone:
+    def __init__(self, name, edge_idc):
+        self.name = name
+        self.edge_idc = edge_idc
+
+def preprocess(graph, priority_queue, pz):
+    need_rotate = [False] * len(priority_queue)
+    while sum(need_rotate) < len(priority_queue):
+        for i, rotate_chain in enumerate(priority_queue):
+            edge_idc = graph.state[rotate_chain]
+            next_edge = find_next_edge(graph, edge_idc, pz.edge_idc)
+            state_edges_idx = get_edge_state(graph)
+            if (
+                have_common_junction_node(graph, edge_idc, next_edge) is False
+                and get_idx_from_idc(graph.idc_dict, next_edge) not in state_edges_idx
+            ):
+                graph.state[rotate_chain] = next_edge
+            else:
+                need_rotate[i] = True
+
+def create_priority_queue(graph, sequence, max_length=10):
+    # TODO could take the circuit as input and calc dag dep and sequence from that
+
+    # unique sequence: sequence without repeating elements (for move_list and 2-qubit gates)
+    unique_sequence = []
+    for seq_elem in sequence:
+        if seq_elem not in unique_sequence:
+            unique_sequence.append(seq_elem)
+            if len(unique_sequence) == max_length:
+                break
+    return unique_sequence
+
+def create_move_list(graph, priority_queue, partition, pz, max_length=10):
+    """
+    Generates a move list for a specific processing zone edge.
+
+    Parameters:
+        graph (Graph): Graph representing the QCCD architecture.
+        sequence (list): Sequence of ions needed in the particular processing zone.
+        pz (str): Processing zone edge used to execute the gate (e.g. 'pz1').
+        max_length (int): The maximum length of the move list. Default is 10.
+
+    Returns:
+        list: list of which ions are moving to a specific processing zone next (at a given time step).
+    """
+
+    # use partition to find chains of priority queue that move to this pz
+    partitioned_priority_queue = [elem for elem in priority_queue if elem in partition[pz.name]]
+
+    # get location of chains
+    ion_chains = get_ion_chains(graph) # could calc outside of fct?
+
+    # determine which of the pz-specific priority queue can move (=move_list)
+    path_length_sequence = {}
+    move_list = []
+    for i, rotate_chain in enumerate(partitioned_priority_queue):
+        edge_idc = ion_chains[rotate_chain]
+        path_to_go = find_path_edge_to_edge(graph, edge_idc, pz.edge_idc) # could calc outside of fct?
+        path_length_sequence[rotate_chain] = len(path_to_go)
+
+        # append to move list if further away than all needed before
+        if i == 0 or sum(
+            np.array([path_length_sequence[rotate_chain]] * len(move_list))
+            > np.array([path_length_sequence[chain] for chain in move_list])
+        ) == len(move_list):
+            move_list.append(rotate_chain)
+
+    return move_list
+
+def create_cycles_for_moves(graph, move_list, pz):
+    # create cycles for all chains in move_list (dictionary with chain as key and cycle_idcs as value)
+    all_cycles = {}
+    next_edge = {}
+    ion_chains = graph.state # is pre calc after preprocess
+
+    for rotate_chain in move_list:
+        edge_idc = ion_chains[rotate_chain]
+        next_edge = find_next_edge(graph, edge_idc, pz.edge_idc)
+
+        # make edge_idc and next_edge consistent
+        edge_idc, next_edge = find_ordered_edges(graph, edge_idc, next_edge)
+
+        # moves without cycle (if edge is free or stop move -> edge_idc == next_edge)
+        if (
+            not check_if_edge_is_filled(graph, next_edge) or edge_idc == next_edge
+        ):
+            all_cycles[rotate_chain] = [edge_idc, next_edge]
+
+        # moves with cycle
+        else:
+            # create cycle
+            all_cycles[rotate_chain] = create_cycle(graph, edge_idc, next_edge)
+
+    return all_cycles
+
+def find_conflict_cycle_idxs(graph, cycles_dict):
+    combinations_of_cycles = list(distinct_combinations(cycles_dict.keys(), 2))
+
+    def get_cycle_nodes(cycle):
+        # if next edge is free -> cycle is just two edges -> can skip first and last node
+        if len(cycles_dict[cycle]) == 2:
+            if cycles_dict[cycle][0] != cycles_dict[cycle][1]:
+                cycle_or_path = [
+                    (cycles_dict[cycle][0][1], cycles_dict[cycle][1][0])
+                ]
+                assert (
+                    cycles_dict[cycle][0][1] == cycles_dict[cycle][1][0]
+                ), "cycle is not two edges? Middle node should be the same"
+
+            else:  # else if path is same edge twice skip (but keep first node -> no movement into this edge)
+                cycle_or_path = [
+                    (cycles_dict[cycle][0][0], cycles_dict[cycle][0][0])
+                ]
+        # if cycle is real cycle -> need to check all nodes
+        elif cycles_dict[cycle][0] == cycles_dict[cycle][-1]:
+            cycle_or_path = cycles_dict[cycle]
+
+        else:
+            raise ValueError("cycle is not two edges or a real cycle?")
+
+        nodes = set()
+        for edge in cycle_or_path:
+            node1, node2 = edge
+            if node1 == node2:
+                nodes.add(node1)
+            else:
+                nodes.add(node1)
+                nodes.add(node2)
+        return nodes
+
+    junction_shared_pairs = []
+    for cycle1, cycle2 in combinations_of_cycles:
+        nodes1 = get_cycle_nodes(cycle1)
+        nodes2 = get_cycle_nodes(cycle2)
+
+        # if cycles got common junction or end in same edge
+        if (
+            #len(nodes1.intersection(nodes2).intersection(graph.junction_nodes)) > 0
+            len(nodes1.intersection(nodes2)) > 0
+        ) or (
+            get_idx_from_idc(graph.idc_dict, cycles_dict[cycle1][-1])
+            == (get_idx_from_idc(graph.idc_dict, cycles_dict[cycle2][-1]))
+        ):
+            junction_shared_pairs.append((cycle1, cycle2))
+
+    return junction_shared_pairs
+
+def find_movable_cycles(graph, all_cycles, move_list):
+    # find cycles that can move while first seq ion is moving
+    nonfree_cycles = find_conflict_cycle_idxs(graph, all_cycles)
+    free_cycle_seq_idxs = [move_list[0]]
+    for seq_cyc in move_list[1:]:
+        nonfree = False
+        for mov_cyc in free_cycle_seq_idxs:
+            if (seq_cyc, mov_cyc) in nonfree_cycles or (mov_cyc, seq_cyc) in nonfree_cycles:
+                nonfree = True
+                break
+        if nonfree is False:
+            free_cycle_seq_idxs.append(seq_cyc)
+    return free_cycle_seq_idxs
+
+def rotate(graph, ion, cycle_idcs):
+    """
+    Rotates ions along their respective cycles
+
+    Parameters:
+        graph (Graph): Graph representing the QCCD architecture.
+        ion (int): Ion to be rotated (for which the cycle was created).
+        cycle_idcs (dict): ions as keys, their individual cycle (or next_edge move) as values.
+    """
+    state_dict = get_edge_state(graph)
+
+    first = True
+    for current_edge, new_edge in pairwise(cycle_idcs):
+        # make current_edge and new_edge consistent
+        current_edge = tuple(sorted(current_edge, key=sum))
+        new_edge = tuple(sorted(new_edge, key=sum))
+
+        # find current ion on edge (ion could have already moved via a different cycle before)
+        current_ion = state_dict.get(current_edge)
+
+        # if current ion on first edge of cycle is different now, exit function (skip cycle)
+        if first and current_ion != ion:
+            print('ion already rotated via previous cycle')
+            # TODO if rotated in wrong direction, could rotate back
+            return
+        first = False
+
+        # otherwise rotate cycle
+        if current_ion is not None:
+            graph.edges[current_edge]['ions'].remove(current_ion)
+            graph.edges[new_edge]['ions'].append(current_ion)
+
+def rotate_free_cycles(graph, all_cycles, free_cycles_idxs):
+    # collect all free cycles
+    rotate_cycles_idcs = {}
+    for cycle_ion in free_cycles_idxs:
+        rotate_cycles_idcs[cycle_ion] = all_cycles[cycle_ion]
+
+    for ion, indiv_cycle_idcs in rotate_cycles_idcs.items():
+        rotate(graph, ion, indiv_cycle_idcs)
