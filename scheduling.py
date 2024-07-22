@@ -8,12 +8,15 @@ class ProcessingZone:
         self.name = name
         self.edge_idc = edge_idc
 
-def preprocess(graph, priority_queue, pz):
+def preprocess(graph, priority_queue):
     need_rotate = [False] * len(priority_queue)
     while sum(need_rotate) < len(priority_queue):
         for i, rotate_chain in enumerate(priority_queue):
+            pz_name = graph.map_to_pz[rotate_chain]
+            pz_edge_idc = [pz.edge_idc for pz in graph.pzs if pz.name == pz_name][0]
+
             edge_idc = graph.state[rotate_chain]
-            next_edge = find_next_edge(graph, edge_idc, pz.edge_idc)
+            next_edge = find_next_edge(graph, edge_idc, pz_edge_idc)
             state_edges_idx = get_edge_state(graph)
             if (
                 have_common_junction_node(graph, edge_idc, next_edge) is False
@@ -24,6 +27,17 @@ def preprocess(graph, priority_queue, pz):
                 need_rotate[i] = True
 
 def create_priority_queue(graph, sequence, max_length=10):
+    """
+    Generates a priority queue of ions that need to move to processing zones.
+
+    Parameters:
+        graph (Graph): Graph representing the QCCD architecture.
+        sequence (list): Sequence of ions needed in a processing zone.
+        max_length (int): The maximum length of the move list. Default is 10.
+
+    Returns:
+        list: list of which ions are moving in what order to the processing zones.
+    """
     # TODO could take the circuit as input and calc dag dep and sequence from that
 
     # unique sequence: sequence without repeating elements (for move_list and 2-qubit gates)
@@ -35,7 +49,14 @@ def create_priority_queue(graph, sequence, max_length=10):
                 break
     return unique_sequence
 
-def create_move_list(graph, priority_queue, partition, pz, max_length=10):
+def get_partitioned_priority_queues(graph, priority_queue, partition):
+    partitioned_priority_queues = {}
+    for pz in graph.pzs:
+        # use partition to find chains of priority queue that move to this pz
+        partitioned_priority_queues[pz.name] = [elem for elem in priority_queue if elem in partition[pz.name]]
+    return partitioned_priority_queues
+
+def create_move_list(graph, partitioned_priority_queue, pz):
     """
     Generates a move list for a specific processing zone edge.
 
@@ -43,15 +64,10 @@ def create_move_list(graph, priority_queue, partition, pz, max_length=10):
         graph (Graph): Graph representing the QCCD architecture.
         sequence (list): Sequence of ions needed in the particular processing zone.
         pz (str): Processing zone edge used to execute the gate (e.g. 'pz1').
-        max_length (int): The maximum length of the move list. Default is 10.
 
     Returns:
         list: list of which ions are moving to a specific processing zone next (at a given time step).
     """
-
-    # use partition to find chains of priority queue that move to this pz
-    partitioned_priority_queue = [elem for elem in priority_queue if elem in partition[pz.name]]
-
     # get location of chains
     ion_chains = get_ion_chains(graph) # could calc outside of fct?
 
@@ -75,8 +91,7 @@ def create_move_list(graph, priority_queue, partition, pz, max_length=10):
 def create_cycles_for_moves(graph, move_list, pz):
     # create cycles for all chains in move_list (dictionary with chain as key and cycle_idcs as value)
     all_cycles = {}
-    next_edge = {}
-    ion_chains = graph.state # is pre calc after preprocess
+    ion_chains = graph.state # was pre calc after preprocess
 
     for rotate_chain in move_list:
         edge_idc = ion_chains[rotate_chain]
@@ -150,11 +165,11 @@ def find_conflict_cycle_idxs(graph, cycles_dict):
 
     return junction_shared_pairs
 
-def find_movable_cycles(graph, all_cycles, move_list):
+def find_movable_cycles(graph, all_cycles, priority_queue):
     # find cycles that can move while first seq ion is moving
     nonfree_cycles = find_conflict_cycle_idxs(graph, all_cycles)
-    free_cycle_seq_idxs = [move_list[0]]
-    for seq_cyc in move_list[1:]:
+    free_cycle_seq_idxs = [priority_queue[0]]
+    for seq_cyc in priority_queue[1:]:
         nonfree = False
         for mov_cyc in free_cycle_seq_idxs:
             if (seq_cyc, mov_cyc) in nonfree_cycles or (mov_cyc, seq_cyc) in nonfree_cycles:
@@ -200,7 +215,9 @@ def rotate_free_cycles(graph, all_cycles, free_cycles_idxs):
     # collect all free cycles
     rotate_cycles_idcs = {}
     for cycle_ion in free_cycles_idxs:
-        rotate_cycles_idcs[cycle_ion] = all_cycles[cycle_ion]
-
+        try:
+            rotate_cycles_idcs[cycle_ion] = all_cycles[cycle_ion]
+        except KeyError:
+            pass
     for ion, indiv_cycle_idcs in rotate_cycles_idcs.items():
         rotate(graph, ion, indiv_cycle_idcs)
