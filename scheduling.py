@@ -215,6 +215,9 @@ def rotate_free_cycles(graph, all_cycles, free_cycles_idxs):
     # collect all free cycles
     rotate_cycles_idcs = {}
     for cycle_ion in free_cycles_idxs:
+        # need try clause here, since priority queue is used in find_movable_cycles()
+        # -> could contain ions not in all_cycles since create_cycles_for_moves() uses partitioned priority queue (move lists)
+        # and in move lists some ions could have already been sorted out
         try:
             rotate_cycles_idcs[cycle_ion] = all_cycles[cycle_ion]
         except KeyError:

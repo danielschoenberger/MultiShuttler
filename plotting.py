@@ -12,6 +12,7 @@ def plot_state(
     show_plot=False,
     save_plot=False,
     plot_cycle=False,
+    plot_pzs=False,
     filename="",
 ):
     idc_dict = graph.idc_dict
@@ -59,6 +60,10 @@ def plot_state(
     if plot_cycle is not False:
         for edge in plot_cycle:
             graph.add_edge(edge[0], edge[1], color="r")
+
+    if plot_pzs is not False:
+        for pz in graph.pzs:
+            graph.add_edge(pz.edge_idc[0], pz.edge_idc[1], color="g")
 
     edge_color = nx.get_edge_attributes(graph, "color").values()
     node_color = list(nx.get_node_attributes(graph, "color").values())
