@@ -1,6 +1,6 @@
 // Benchmark was created by MQT Bench on 2024-06-04
-// 
-// 
+//
+//
 // TKET version: 1.17.0
 // Used Gate Set: ['rzz', 'rz', 'ry', 'rx', 'measure', 'barrier']
 

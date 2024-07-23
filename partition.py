@@ -42,12 +42,12 @@ def construct_interaction_graph(circuit):
 def partition_graph(graph, n):
     partitions = []
     subgraphs = [graph]
-
     while len(partitions) < n:
         new_subgraphs = []
         for subgraph in subgraphs:
             if len(partitions) + len(new_subgraphs) < n:
                 part1, part2 = kernighan_lin_bisection(subgraph)
+                print(part1, part2)
                 new_subgraphs.append(graph.subgraph(part1))
                 new_subgraphs.append(graph.subgraph(part2))
             else:
@@ -58,7 +58,7 @@ def partition_graph(graph, n):
     return partitions
 
 
-def partition(qasm_file_path, n):
+def get_partition(qasm_file_path, n):
     circuit = read_qasm_file(qasm_file_path)
     interaction_graph = construct_interaction_graph(circuit)
     partition_graphs = partition_graph(interaction_graph, n)
@@ -76,7 +76,8 @@ def partition(qasm_file_path, n):
 if __name__ == "__main__":
     # Example usage
     qasm_file_path = (
-        "QASM_files/qft_no_swaps/QFT_no_swaps_nativegates_quantinuum_tket_6.qasm"
+        "QASM_files/full_register_access/full_register_access_40.qasm"
+        #"QASM_files/QFT_no_swaps/qft_no_swaps_nativegates_quantinuum_tket_6.qasm"
     )
     n = 3
-    partition(qasm_file_path, n)
+    print(get_partition(qasm_file_path, n))
