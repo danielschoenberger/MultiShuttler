@@ -33,7 +33,10 @@ def construct_interaction_graph(circuit):
 
     # plot graph
     # nx.draw(graph, with_labels=True)
-    # nx.draw_networkx_edge_labels(graph, pos=nx.circular_layout(graph), edge_labels={(u, v): d['weight'] for u, v, d in graph.edges(data=True)})
+    # nx.draw_networkx_edge_labels(
+    #     graph, pos=nx.circular_layout(graph),
+    #     edge_labels={(u, v): d['weight'] for u, v, d in graph.edges(data=True)}
+    #     )
     # plt.show()
 
     return graph
@@ -77,7 +80,7 @@ if __name__ == "__main__":
     # Example usage
     qasm_file_path = (
         "QASM_files/full_register_access/full_register_access_40.qasm"
-        #"QASM_files/QFT_no_swaps/qft_no_swaps_nativegates_quantinuum_tket_6.qasm"
+        # "QASM_files/QFT_no_swaps/qft_no_swaps_nativegates_quantinuum_tket_6.qasm"
     )
     n = 3
     print(get_partition(qasm_file_path, n))
