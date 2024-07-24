@@ -1,8 +1,8 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
-
 from graph_utils import get_idx_from_idc
+
 
 # Plotting function
 def plot_state(
@@ -41,7 +41,7 @@ def plot_state(
         np.random.seed()
 
     for edge in graph.edges:
-        ions = graph.edges[edge]['ions']
+        ions = graph.edges[edge]["ions"]
         for ion in ions:
             try:
                 ion_holder[edge].append(ion)
@@ -69,9 +69,7 @@ def plot_state(
     node_color = list(nx.get_node_attributes(graph, "color").values())
     edge_labels = nx.get_edge_attributes(graph, "ion_chain")
 
-    plt.figure(
-        figsize=(max(pos.keys())[1] * 2, max(pos.keys())[0] * 2)
-    )
+    plt.figure(figsize=(max(pos.keys())[1] * 2, max(pos.keys())[0] * 2))
     nx.draw_networkx(
         graph,
         pos=pos,
@@ -88,7 +86,6 @@ def plot_state(
     for edge in graph.edges:
         if edge in ion_holder:
             graph.add_edge(edge[0], edge[1], ion_chain="", color="k")
-
 
     labels0, labels1 = labels
     plt.plot([], [], label=labels0)
