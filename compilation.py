@@ -1,8 +1,5 @@
-import math
 import re
 from pathlib import Path
-
-from qiskit.dagcircuit import DAGDependency
 
 
 def is_qasm_file(filename):
@@ -34,7 +31,8 @@ def extract_qubits_from_gate(gate_line):
 
 
 def parse_qasm(filename):
-    """Parse a QASM file and return qubits used for each gate, preserving their order."""
+    """Parse a QASM file and return qubits used for each gate
+    preserving their order."""
     gates_and_qubits = []
     # if filename is str
     if not isinstance(filename, Path):
@@ -44,11 +42,14 @@ def parse_qasm(filename):
             line = _line.strip()
 
             # Check if line represents a gate operation
-            if not line.startswith(("OPENQASM", "include", "qreg", "creg", "gate", "barrier", "measure")):
+            if not line.startswith(
+                ("OPENQASM", "include", "qreg", "creg", "gate", "barrier", "measure")
+            ):
                 qubits = extract_qubits_from_gate(line)
                 if qubits:
                     gates_and_qubits.append(tuple(qubits))
     return gates_and_qubits
+
 
 def compile(filename):
     """Compile a QASM file and return the compiled sequence of qubits."""
@@ -117,7 +118,8 @@ def compile(filename):
 
 
 # def update_sequence(dag, dist_map):
-#     """Get the sequence of gates from the DAG. Creates a new DAG and removes all gates from it while creating the sequence."""
+#     """Get the sequence of gates from the DAG.
+#     Creates a new DAG and removes all gates from it while creating the sequence."""
 #     working_dag = manual_copy_dag(dag)
 #     sequence = []
 #     i = 0
