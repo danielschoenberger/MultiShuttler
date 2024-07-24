@@ -1,12 +1,12 @@
 import networkx as nx
 import random
 from more_itertools import pairwise
+from graph_utils import get_idx_from_idc
 
-from graph_utils import get_idx_from_idc, get_idc_from_idx
 
 def create_starting_config(graph, n_of_chains, seed=None):
     # Initialize ions on edges using an edge attribute
-    nx.set_edge_attributes(graph, {edge: [] for edge in graph.edges}, 'ions')
+    nx.set_edge_attributes(graph, {edge: [] for edge in graph.edges}, "ions")
 
     if seed is not None:
         random.seed(seed)
@@ -31,18 +31,21 @@ def create_starting_config(graph, n_of_chains, seed=None):
     # place ions onto traps (ion0 on starting_trap0)
     ion_chains = {}
     for ion, idc in enumerate(starting_traps):
-        graph.edges[idc]['ions'] = [ion]
+        graph.edges[idc]["ions"] = [ion]
 
     return ion_chains, number_of_registers
+
 
 def get_ion_chains(graph):
     ion_chains = {}
     # Iterate over all edges in the graph
     for u, v, data in graph.edges(data=True):
         try:
-            chains = data['ions'][0]
-            if len(data['ions']) > 1:
-                raise ValueError(f"Edge ({u}, {v}) has more than one ion entry: {data['ions']}")
+            chains = data["ions"][0]
+            if len(data["ions"]) > 1:
+                raise ValueError(
+                    f"Edge ({u}, {v}) has more than one ion entry: {data['ions']}"
+                )
             # make indices of edge consistent
             edge_idc = tuple(sorted((u, v), key=sum))
             ion_chains[chains] = edge_idc
@@ -51,20 +54,24 @@ def get_ion_chains(graph):
 
     return ion_chains
 
+
 def get_edge_state(graph):
     state_dict = {}
     # Iterate over all edges in the graph
     for u, v, data in graph.edges(data=True):
         try:
-            chains = data['ions'][0]
-            if len(data['ions']) > 1:
-                raise ValueError(f"Edge ({u}, {v}) has more than one ion entry: {data['ions']}")
+            chains = data["ions"][0]
+            if len(data["ions"]) > 1:
+                raise ValueError(
+                    f"Edge ({u}, {v}) has more than one ion entry: {data['ions']}"
+                )
             # make indices of edge consistent
             edge_idc = tuple(sorted((u, v), key=sum))
             state_dict[edge_idc] = chains
         except (KeyError, IndexError):
             pass
     return state_dict
+
 
 def have_common_junction_node(graph, edge1, edge2):
     # Extract nodes from the edges
@@ -78,30 +85,33 @@ def have_common_junction_node(graph, edge1, edge2):
 
     return len(common_junction_nodes) > 0
 
+
 def check_if_edge_is_filled(graph, edge_idc):
-    chain = graph.edges()[edge_idc]['ions']
+    chain = graph.edges()[edge_idc]["ions"]
     if len(chain) > 1:
         raise ValueError(f"Edge {edge_idc} has more than one ion entry: {chain}")
     return len(chain) == 1
 
+
 def find_path_node_to_edge(graph, node, goal_edge):
     # manipulate graph weights
-    original_weight = graph[goal_edge[0]][goal_edge[1]].get('weight', 1)
+    original_weight = graph[goal_edge[0]][goal_edge[1]].get("weight", 1)
     # set weight of goal edge to inf (so it can't move past the edge)
-    graph[goal_edge[0]][goal_edge[1]]['weight'] = float('inf')
+    graph[goal_edge[0]][goal_edge[1]]["weight"] = float("inf")
 
     # find shortest path towards both sides (nodes of goal edge)
-    path0 = nx.shortest_path(graph, node, goal_edge[0], weight='weight')
-    path1 = nx.shortest_path(graph, node, goal_edge[1], weight='weight')
+    path0 = nx.shortest_path(graph, node, goal_edge[0], weight="weight")
+    path1 = nx.shortest_path(graph, node, goal_edge[1], weight="weight")
 
     # restore the original weight of the edge
-    graph[goal_edge[0]][goal_edge[1]]['weight'] = original_weight
+    graph[goal_edge[0]][goal_edge[1]]["weight"] = original_weight
 
     # return min path
     if len(path1) < len(path0):
         return path1
     else:
         return path0
+
 
 def find_path_edge_to_edge(graph, edge_idc, goal_edge):
     # find path to goal edge from both nodes
@@ -114,6 +124,7 @@ def find_path_edge_to_edge(graph, edge_idc, goal_edge):
     else:
         return path0
 
+
 def find_next_edge(graph, edge_idc, goal_edge):
     if edge_idc == goal_edge:
         return goal_edge
@@ -123,6 +134,7 @@ def find_next_edge(graph, edge_idc, goal_edge):
             return goal_edge
     node_path = find_path_edge_to_edge(graph, edge_idc, goal_edge)
     return (node_path[0], node_path[1])
+
 
 def find_ordered_edges(graph, edge1, edge2):
     idc_dict = graph.idc_dict
@@ -158,8 +170,11 @@ def find_ordered_edges(graph, edge1, edge2):
 
     return edge1_in_order, edge2_in_order
 
+
 def create_cycle(
-    graph, edge_idc, next_edge,
+    graph,
+    edge_idc,
+    next_edge,
 ):
     idc_dict = graph.idc_dict
 
