@@ -1,5 +1,6 @@
 import networkx as nx
 
+
 # create dictionary to swap from idx to idc and vice versa
 def create_idc_dictionary(graph):
     edge_dict = {}
@@ -15,6 +16,7 @@ def get_idx_from_idc(edge_dictionary, idc):
 
 def get_idc_from_idx(edge_dictionary, idx):
     return edge_dictionary[idx]
+
 
 class GraphCreator:
     def __init__(self, m, n, ion_chain_size_vertical, ion_chain_size_horizontal):
