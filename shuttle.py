@@ -1,6 +1,15 @@
 from Cycles import get_ion_chains
-from scheduling import create_move_list, create_priority_queue, get_partitioned_priority_queues, find_movable_cycles, rotate_free_cycles, create_cycles_for_moves, preprocess
+from scheduling import (
+    create_move_list,
+    create_priority_queue,
+    get_partitioned_priority_queues,
+    find_movable_cycles,
+    rotate_free_cycles,
+    create_cycles_for_moves,
+    preprocess,
+)
 from plotting import plot_state
+
 
 def shuttle(graph, sequence, partition, timestep):
     priority_queue = create_priority_queue(graph, sequence)
@@ -23,7 +32,16 @@ def shuttle(graph, sequence, partition, timestep):
     rotate_free_cycles(graph, all_cycles, chains_to_rotate)
 
     labels = ("timestep %s" % timestep, None)
-    plot_state(graph, labels, plot_ions=True, show_plot=graph.plot, save_plot=False, plot_cycle=False, plot_pzs=True, filename="")
+    plot_state(
+        graph,
+        labels,
+        plot_ions=True,
+        show_plot=graph.plot,
+        save_plot=False,
+        plot_cycle=False,
+        plot_pzs=True,
+        filename="",
+    )
 
 
 def main(graph, sequence, partition):
