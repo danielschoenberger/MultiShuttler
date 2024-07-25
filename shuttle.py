@@ -9,12 +9,13 @@ from scheduling import (
     preprocess,
 )
 from plotting import plot_state
+import os
+from datetime import datetime
 
 
-def shuttle(graph, sequence, partition, timestep):
+def shuttle(graph, sequence, partition, timestep, unique_folder):
     priority_queue = create_priority_queue(graph, sequence)
     preprocess(graph, priority_queue)
-
     # Update ion chains after preprocess
     graph.state = get_ion_chains(graph)
 
@@ -32,15 +33,18 @@ def shuttle(graph, sequence, partition, timestep):
     rotate_free_cycles(graph, all_cycles, chains_to_rotate)
 
     labels = ("timestep %s" % timestep, None)
+
     plot_state(
         graph,
         labels,
         plot_ions=True,
         show_plot=graph.plot,
-        save_plot=False,
+        save_plot=graph.save,
         plot_cycle=False,
         plot_pzs=True,
-        filename="",
+        filename=os.path.join(
+            unique_folder, "%s_timestep_%s.png" % (graph.arch, timestep)
+        ),
     )
 
 
@@ -49,10 +53,13 @@ def main(graph, sequence, partition):
     max_timesteps = 1e6
     graph.state = get_ion_chains(graph)
 
+    unique_folder = os.path.join("runs", datetime.now().strftime("%Y%m%d_%H%M%S"))
+    os.makedirs(unique_folder, exist_ok=True)
+
     while timestep < max_timesteps:
         print("Timestep % s" % timestep)
 
-        shuttle(graph, sequence, partition, timestep)
+        shuttle(graph, sequence, partition, timestep, unique_folder)
         graph.state = get_ion_chains(graph)
 
         processed_ions = []

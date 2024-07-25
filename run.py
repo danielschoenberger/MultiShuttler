@@ -7,28 +7,37 @@ from compilation import compile
 import math
 
 plot = False
+save = True
 
 # Create a grid graph with the specified parameters
-m, n, ion_chain_size_vertical, ion_chain_size_horizontal = 6, 6, 1, 1
+m, n, ion_chain_size_vertical, ion_chain_size_horizontal = 4, 4, 3, 3
 graph_creator = GraphCreator(m, n, ion_chain_size_vertical, ion_chain_size_horizontal)
 G = graph_creator.get_graph()
 G.plot = plot
+G.save = save
+G.arch = str([m, n, ion_chain_size_vertical, ion_chain_size_horizontal])
 
 number_of_chains = math.ceil(len(G.edges()) / 2)
 print(f"Number of chains: {number_of_chains}")
 qasm_file_path = (
     "QASM_files/full_register_access/full_register_access_%s.qasm" % number_of_chains
 )
+
+edges = list(G.edges())
+# Select the middle edge
+middle_index = math.ceil(len(edges) / 2)
+middle_edge = edges[middle_index]
+print(f"Middle edge: {middle_edge}")
 pz1 = ProcessingZone("pz1", ((0, 0), (1, 0)))
 pz2 = ProcessingZone(
     "pz2",
-    (
-        (math.ceil((m - 1) / 2), math.ceil((n - 1) / 2)),
-        (math.ceil((m - 1) / 2), math.ceil((n - 1) / 2) + 1),
-    ),
+    (middle_edge),
 )
-pz3 = ProcessingZone("pz3", ((m - 1, n - 2), (m - 1, n - 1)))
+pz3 = ProcessingZone(
+    "pz3", ((max(G.nodes)[0], max(G.nodes)[1] - 1), (max(G.nodes)[0], max(G.nodes)[1]))
+)
 G.pzs = [pz1, pz2, pz3]
+
 create_starting_config(G, number_of_chains, seed=0)
 G.idc_dict = create_idc_dictionary(G)
 G.state = get_ion_chains(G)
