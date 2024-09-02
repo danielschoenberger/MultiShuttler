@@ -58,14 +58,15 @@ def compile(filename):
         raise ValueError("Invalid QASM file format")
 
     # Parse the QASM file to extract the qubits used for each gate
-    gates_and_qubits = parse_qasm(filename)
+    parse_qasm(filename)
+    sequence = parse_qasm(filename)
 
-    # Compile the sequence of qubits
-    sequence = []
-    for qubits in gates_and_qubits:
-        for qubit in qubits:
-            if qubit not in sequence:
-                sequence.append(qubit)
+    # print(gates_and_qubits)
+    # # Compile the sequence of qubits
+    # sequence = []
+    # for qubits in gates_and_qubits:
+    #     for qubit in qubits:
+    #         sequence.append(qubit)
 
     return sequence
 

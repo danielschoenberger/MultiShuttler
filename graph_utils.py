@@ -31,7 +31,10 @@ class GraphCreator:
         self.m_extended = self.m + (self.ion_chain_size_vertical - 1) * (self.m - 1)
         self.n_extended = self.n + (self.ion_chain_size_horizontal - 1) * (self.n - 1)
 
-        networkx_graph = nx.grid_2d_graph(self.m_extended, self.n_extended)
+        networkx_graph = nx.grid_2d_graph(
+            self.m_extended,
+            self.n_extended,
+        )
         self._set_trap_nodes(networkx_graph)
         self._remove_horizontal_edges(networkx_graph)
         self._remove_vertical_edges(networkx_graph)
@@ -39,6 +42,7 @@ class GraphCreator:
         networkx_graph.junction_nodes = []
         self._set_junction_nodes(networkx_graph)
         nx.set_edge_attributes(networkx_graph, "trap", "edge_type")
+        nx.set_edge_attributes(networkx_graph, 1, "weight")
 
         return networkx_graph
 
