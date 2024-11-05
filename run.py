@@ -2,50 +2,50 @@ from graph_utils import GraphCreator, create_idc_dictionary
 from Cycles import create_starting_config, find_path_edge_to_edge
 from scheduling import ProcessingZone, get_ion_chains
 from shuttle import main
-from partition import get_partition
 from compilation import compile
 import math
 import networkx as nx
 import numpy as np
 from datetime import datetime
+from plotting import plot_state
 
-plot = False
+plot = True
 save = False
 
-number_of_pzs_list = [2, 3, 4, 5, 6, 7, 8, 9, 10]
+number_of_pzs_list = [1]  # [2, 3, 4]#, 5, 6, 7, 8, 9, 10]
 archs = [
     # [3, 3, 2, 2],
-    [3, 3, 1, 1],
-    [3, 3, 2, 2],
-    [3, 3, 3, 3],
-    [4, 4, 1, 1],
-    [4, 4, 2, 2],
-    [4, 4, 3, 3],
-    [5, 5, 1, 1],
-    [5, 5, 2, 2],
+    # [3, 3, 1, 1],
+    # [3, 3, 2, 2],
+    # [3, 3, 3, 3],
+    # [4, 4, 1, 1],
+    # [4, 4, 2, 2],
+    # [4, 4, 3, 3],
+    # [5, 5, 1, 1],
+    # [5, 5, 2, 2],
     [5, 5, 3, 3],
-    [6, 6, 1, 1],
-    [6, 6, 2, 2],
-    [6, 6, 3, 3],
-    [7, 7, 1, 1],
-    [7, 7, 2, 2],
-    [7, 7, 3, 3],
-    [8, 8, 1, 1],
-    [8, 8, 2, 2],
-    [8, 8, 3, 3],
-    [9, 9, 1, 1],
-    [9, 9, 2, 2],
-    [9, 9, 3, 3],
-    [10, 10, 1, 1],
-    [10, 10, 2, 2],
-    [10, 10, 3, 3],
+    # [6, 6, 1, 1],
+    # [6, 6, 2, 2],
+    # [6, 6, 3, 3],
+    # [7, 7, 1, 1],
+    # [7, 7, 2, 2],
+    # [7, 7, 3, 3],
+    # [8, 8, 1, 1],
+    # [8, 8, 2, 2],
+    # [8, 8, 3, 3],
+    # [9, 9, 1, 1],
+    # [9, 9, 2, 2],
+    # [9, 9, 3, 3],
+    # [10, 10, 1, 1],
+    # [10, 10, 2, 2],
+    # [10, 10, 3, 3],
     # [8, 8, 2, 2],
     # [9, 9, 2, 2],
     # [10, 10, 2, 2],
     # [11, 11, 2, 2],
     # [12, 12, 2, 2],
 ]
-seeds = [0, 1, 2, 3, 4]
+seeds = [1]  # , 1, 2, 3, 4]
 time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 for m, n, ion_chain_size_vertical, ion_chain_size_horizontal in archs:
@@ -65,13 +65,21 @@ for m, n, ion_chain_size_vertical, ion_chain_size_horizontal in archs:
             G.arch = str([m, n, ion_chain_size_vertical, ion_chain_size_horizontal])
 
             number_of_chains = math.ceil(len(G.edges()) / 2)
+            G.idc_dict = create_idc_dictionary(G)
+
+            # plot
+            plot_state(
+                G, (None, None), plot_ions=False, show_plot=False, save_plot=True
+            )
+
             print(f"Number of chains: {number_of_chains}")
-            algorithm = "full_register_access"
+            algorithm = "qft_no_swaps_nativegates_quantinuum_tket"
             qasm_file_path = (
                 f"QASM_files/{algorithm}/{algorithm}_{number_of_chains}.qasm"
             )
 
-            # edges = list(G.edges())
+            edges = list(G.edges())
+            print("edges", math.ceil(len(edges)))
             # # Select the middle edge
             # middle_index = math.ceil(len(edges) / 2)
             # middle_edge = edges[middle_index]
@@ -116,14 +124,15 @@ for m, n, ion_chain_size_vertical, ion_chain_size_horizontal in archs:
 
             sequence = compile(qasm_file_path)
             G.sequence = sequence
-            print(sequence)
+            print(len(sequence), "len seq")
 
-            # if there is a tuple in sequence (2-qbuit gate) use partitioning
-            if any(isinstance(i, tuple) for i in sequence):
-                part = get_partition(qasm_file_path, len(G.pzs))
-                partition = {pz.name: part[i] for i, pz in enumerate(G.pzs)}
-                num_pzs = len(G.pzs)
-            else:
+            # if there is a real tuple in sequence (2-qbuit gate) use partitioning
+            # if any(len(i) > 1 for i in sequence):
+            #     part = get_partition(qasm_file_path, len(G.pzs))
+            #     partition = {pz.name: part[i] for i, pz in enumerate(G.pzs)}
+            #     num_pzs = len(G.pzs)
+            # else:
+            if True:
                 # else place them in the closest processing zone (equally distributed)
                 # TODO double check
                 partition = {pz.name: [] for pz in G.pzs}
@@ -187,12 +196,11 @@ for m, n, ion_chain_size_vertical, ion_chain_size_horizontal in archs:
             timesteps_array.append(timesteps)
             cpu_time_array.append(cpu_time)
 
-            # # save timesteps in a file
-            # with open(f"benchmarks/{time}{algorithm}.txt", "a") as f:
-            #     f.write(
-            #         f"{m, n, ion_chain_size_vertical, ion_chain_size_horizontal},
-            #         #pzs: {num_pzs}, ts: {timesteps}, seed: {seed}\n"
-            # )
+            # save timesteps in a file
+            with open(f"benchmarks/{time}{algorithm}.txt", "a") as f:
+                f.write(
+                    f"{m, n, ion_chain_size_vertical, ion_chain_size_horizontal}, #pzs: {num_pzs}, ts: {timesteps}, seed: {seed}\n"
+                )
 
         # calculate averages
         timesteps_array = np.array(timesteps_array)
@@ -201,9 +209,13 @@ for m, n, ion_chain_size_vertical, ion_chain_size_horizontal in archs:
         cpu_time_average = np.mean(cpu_time_array)
 
         # save averages
-        # with open(f"benchmarks/{time}{algorithm}.txt", "a") as f:
-        #     f.write(
-        #         f"{m, n, ion_chain_size_vertical, ion_chain_size_horizontal},
-        #         #pzs: {num_pzs}, average_ts: {timesteps_average},
-        #         average_cpu_time: {cpu_time_average}\n"
-        #     )
+        with open(f"benchmarks/{time}{algorithm}.txt", "a") as f:
+            f.write(
+                f"{m, n, ion_chain_size_vertical, ion_chain_size_horizontal}, #pzs: {num_pzs}, average_ts: {timesteps_average}, average_cpu_time: {cpu_time_average}\n"
+            )
+
+
+# if __name__ == "__main__":
+#     gate_info_list = {'pz1': [1], 'pz2': [2, 1], 'pz3': [3], 'pz4': [], 'pz5': []}
+#     sequence = [(2, 1), (1,), (3,)]
+#     print(find_pz_order(G, sequence, gate_info_list))

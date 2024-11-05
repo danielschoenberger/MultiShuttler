@@ -13,7 +13,7 @@ def plot_state(
     save_plot=False,
     plot_cycle=False,
     plot_pzs=False,
-    filename="",
+    filename="graph.pdf",
 ):
     idc_dict = graph.idc_dict
     pos = {(x, y): (y, -x) for i, (x, y) in enumerate(list(graph.nodes()))}
@@ -40,13 +40,13 @@ def plot_state(
             colors.append((r, g, b))
         np.random.seed()
 
-    for edge in graph.edges:
-        ions = graph.edges[edge]["ions"]
-        for ion in ions:
-            try:
-                ion_holder[edge].append(ion)
-            except KeyError:
-                ion_holder[edge] = [ion]
+    # for edge in graph.edges:
+    #     ions = graph.edges[edge]["ions"]
+    #     for ion in ions:
+    #         try:
+    #             ion_holder[edge].append(ion)
+    #         except KeyError:
+    #             ion_holder[edge] = [ion]
 
     for edge in graph.edges:
         if edge in ion_holder:
@@ -68,19 +68,20 @@ def plot_state(
     edge_color = nx.get_edge_attributes(graph, "color").values()
     node_color = list(nx.get_node_attributes(graph, "color").values())
     edge_labels = nx.get_edge_attributes(graph, "ions")
+    node_size = list(nx.get_node_attributes(graph, "node_size").values())
 
     plt.figure(figsize=(max(pos.keys())[1] * 1.5, max(pos.keys())[0] * 1.5))
     nx.draw_networkx(
         graph,
         pos=pos,
-        with_labels=True,
-        node_size=300,
+        with_labels=False,
+        node_size=node_size,
         node_color=node_color,
         width=8,
         edge_color=edge_color,
         font_size=6,
     )
-    nx.draw_networkx_edge_labels(graph, pos, edge_labels)
+    # nx.draw_networkx_edge_labels(graph, pos, edge_labels)
 
     # # reset edge labels for following iterations?
     # for edge in graph.edges:
@@ -90,7 +91,7 @@ def plot_state(
     labels0, labels1 = labels
     plt.plot([], [], label=labels0)
     plt.plot([], [], label=labels1)
-    plt.legend()
+    # plt.legend()
 
     if show_plot is True:
         plt.show()

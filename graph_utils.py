@@ -48,7 +48,9 @@ class GraphCreator:
 
     def _set_trap_nodes(self, networkx_graph):
         for node in networkx_graph.nodes():
-            networkx_graph.add_node(node, node_type="trap_node", color="b")
+            networkx_graph.add_node(
+                node, node_type="trap_node", color="k", node_size=150
+            )
 
     def _remove_horizontal_edges(self, networkx_graph):
         for i in range(
@@ -98,7 +100,9 @@ class GraphCreator:
     def _set_junction_nodes(self, networkx_graph):
         for i in range(0, self.m_extended, self.ion_chain_size_vertical):
             for j in range(0, self.n_extended, self.ion_chain_size_horizontal):
-                networkx_graph.add_node((i, j), node_type="junction_node", color="g")
+                networkx_graph.add_node(
+                    (i, j), node_type="junction_node", color="g", node_size=400
+                )
                 networkx_graph.junction_nodes.append((i, j))
 
     def get_graph(self):

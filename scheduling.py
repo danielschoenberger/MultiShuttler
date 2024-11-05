@@ -71,9 +71,31 @@ def preprocess(graph, priority_queue):
 #     return unique_sequence
 
 
+def get_edge_idc_by_pz_name(graph, pz_name):
+    for pz in graph.pzs:
+        if pz.name == pz_name:
+            return pz.edge_idc
+    raise ValueError(f"Processing zone with name {pz_name} not found.")
+
+
 def pick_pz_for_2_q_gate(graph, ion0, ion1):
     # TODO implement a better way to pick the processing zone for 2-qubit gates
     return graph.map_to_pz[ion0]
+
+
+def pick_pz_for_2_q_gate_new(graph, ion0, ion1):
+    # TODO implement a better way to pick the processing zone for 2-qubit gates
+    # pick the processing zone that both ions are closest to (so sum of distances is minimal)
+    min_distance = float("inf")
+    for pz_name in [graph.map_to_pz[ion0], graph.map_to_pz[ion1]]:
+        pz_edge_idc = get_edge_idc_by_pz_name(graph, pz_name)
+        distance = len(
+            find_path_edge_to_edge(graph, graph.state[ion0], pz_edge_idc)
+        ) + len(find_path_edge_to_edge(graph, graph.state[ion1], pz_edge_idc))
+        if distance < min_distance:
+            min_distance = distance
+            closest_pz = pz_name
+    return closest_pz
 
 
 def create_priority_queue(graph, sequence, max_length=10):
@@ -111,12 +133,22 @@ def create_priority_queue(graph, sequence, max_length=10):
 
         # 2-qubit gate
         elif len(seq_elem) == 2:
-            # pick processing zone for 2-qubit gate
-            pz_for_2_q_gate = pick_pz_for_2_q_gate(graph, seq_elem[0], seq_elem[1])
+            if seq_elem not in graph.locked_gates:
+                # pick processing zone for 2-qubit gate
+                pz_for_2_q_gate = pick_pz_for_2_q_gate_new(
+                    graph, seq_elem[0], seq_elem[1]
+                )
+            else:
+                pz_for_2_q_gate = graph.locked_gates[seq_elem]
 
             # add first gate of pz to next_gate_at_pz (if not already there)
             if pz_for_2_q_gate not in next_gate_at_pz:
                 next_gate_at_pz[pz_for_2_q_gate] = seq_elem
+                # lock the processing zone for the 2-qubit gate for later iterations
+                # otherwise maybe pz changes if both move in a way, that favors a new pz
+                # -> could result in a bug, if the very next iterations
+                # changes state back to old pz
+                graph.locked_gates[seq_elem] = pz_for_2_q_gate
 
             # add ions to unique_sequence
             for elem in seq_elem:
@@ -126,6 +158,7 @@ def create_priority_queue(graph, sequence, max_length=10):
                         break
         else:
             raise ValueError("len gate 0 or > 2? - can only process 1 or 2-qubit gates")
+
         # at the end fill all empty pzs with []
         for pz in graph.pzs:
             if pz.name not in next_gate_at_pz:
@@ -160,7 +193,11 @@ def create_gate_info_list(graph):
             if gate_info_list[pz] == []:
                 gate_info_list[pz].append(elem)
         elif len(seq_elem) == 2:
-            pz = pick_pz_for_2_q_gate(graph, seq_elem[0], seq_elem[1])
+            # only pick processing zone for 2-qubit gate if not already locked
+            if seq_elem not in graph.locked_gates:
+                pz = pick_pz_for_2_q_gate_new(graph, seq_elem[0], seq_elem[1])
+            else:
+                pz = graph.locked_gates[seq_elem]
             if gate_info_list[pz] == []:
                 gate_info_list[pz].append(seq_elem[0])
                 gate_info_list[pz].append(seq_elem[1])
@@ -191,10 +228,17 @@ def create_move_list(graph, partitioned_priority_queue, pz):
         else:
             path_to_go = find_path_edge_to_edge(graph, edge_idc, pz.edge_idc)
             path_length_sequence[rotate_chain] = len(path_to_go)
-        if i == 0 or sum(
-            np.array([path_length_sequence[rotate_chain]] * len(move_list))
-            > np.array([path_length_sequence[chain] for chain in move_list])
-        ) == len(move_list):
+
+        # if first ion or all paths are 0 (all ions to move are in pz already) or current path is longer than all other paths
+        if (
+            i == 0
+            or sum(path_length_sequence.values()) == 0
+            or sum(
+                np.array([path_length_sequence[rotate_chain]] * len(move_list))
+                > np.array([path_length_sequence[chain] for chain in move_list])
+            )
+            == len(move_list)
+        ):
             move_list.append(rotate_chain)
 
     return move_list
@@ -218,12 +262,17 @@ def find_conflict_cycle_idxs(graph, cycles_dict):
     combinations_of_cycles = list(distinct_combinations(cycles_dict.keys(), 2))
 
     def get_cycle_nodes(cycle):
+        # if cycle is two edges
         if len(cycles_dict[cycle]) == 2:
+            # if not a stop move
             if cycles_dict[cycle][0] != cycles_dict[cycle][1]:
                 cycle_or_path = [(cycles_dict[cycle][0][1], cycles_dict[cycle][1][0])]
                 assert (
                     cycles_dict[cycle][0][1] == cycles_dict[cycle][1][0]
                 ), "cycle is not two edges? Middle node should be the same"
+            # if a stop move and in stop moves (in pz for 2-qubit gate)
+            elif cycle in graph.stop_moves:
+                cycle_or_path = cycles_dict[cycle]
             else:
                 cycle_or_path = (
                     []
@@ -280,6 +329,7 @@ def find_movable_cycles(graph, all_cycles, priority_queue):
 
 
 def rotate(graph, ion, cycle_idcs):
+    print(f"Rotating ion {ion} along cycle {cycle_idcs}", graph.in_process)
     state_dict = get_edge_state(graph)
     first = True
     last_ion = -1
@@ -301,8 +351,8 @@ def rotate(graph, ion, cycle_idcs):
             print(f"Ion {ion} already rotated via previous cycle")
             return
         first = False
-        # if current_ion in graph.in_process:
-        # print('didnt rotate %s' %current_ion)
+        if current_ion in graph.in_process:
+            print("didn't rotate %s" % current_ion)
         if (
             current_ion != []
             and current_ion != last_ion
@@ -310,6 +360,7 @@ def rotate(graph, ion, cycle_idcs):
         ):  # and not ion in pz and needed in 2-qubit gate
             graph.edges[current_edge]["ions"].remove(current_ion)
             graph.edges[new_edge]["ions"].append(current_ion)
+            print(f"Rotated ion {current_ion} from {current_edge} to {new_edge}")
 
         # save last ion so each ion only rotates once
         last_ion = current_ion
