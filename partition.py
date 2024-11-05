@@ -86,7 +86,7 @@ def partition_graph_new(graph, n):
 
     assert n <= len(
         graph.nodes
-    ), "Number of partitions must be less or equal to the number of nodes"
+    ), f"Number of partitions must be less or equal to the number of nodes {len(graph.nodes), graph.nodes, n}"
     partitions = [graph.copy()]
     new_partitions = []
     while len(partitions) < n:

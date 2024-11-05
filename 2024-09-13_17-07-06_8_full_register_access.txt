@@ -1,0 +1,44 @@
+(7, 7, 1, 1), #pzs: 8, ts: 40, cpu_time: 0:00:06.190715, seed: 0
+(8, 8, 1, 1), #pzs: 8, ts: 54, cpu_time: 0:00:12.926438, seed: 0
+(7, 7, 1, 1), #pzs: 8, ts: 48, cpu_time: 0:00:07.367861, seed: 1
+(7, 7, 1, 1), #pzs: 8, ts: 40, cpu_time: 0:00:06.268899, seed: 2
+(9, 9, 1, 1), #pzs: 8, ts: 65, cpu_time: 0:00:23.626322, seed: 0
+(7, 7, 1, 1), #pzs: 8, ts: 38, cpu_time: 0:00:05.951067, seed: 3
+(8, 8, 1, 1), #pzs: 8, ts: 59, cpu_time: 0:00:14.375614, seed: 1
+(7, 7, 1, 1), #pzs: 8, ts: 47, cpu_time: 0:00:07.340553, seed: 4
+(7, 7, 1, 1), #pzs: 8, ts: 39, cpu_time: 0:00:06.172114, seed: 5
+(8, 8, 1, 1), #pzs: 8, ts: 53, cpu_time: 0:00:12.950688, seed: 2
+(7, 7, 1, 1), #pzs: 8, ts: 34, cpu_time: 0:00:05.441328, seed: 6
+(9, 9, 1, 1), #pzs: 8, ts: 65, cpu_time: 0:00:23.628246, seed: 1
+(7, 7, 1, 1), #pzs: 8, ts: 39, cpu_time: 0:00:06.200052, seed: 7
+(10, 10, 1, 1), #pzs: 8, ts: 98, cpu_time: 0:00:52.320467, seed: 0
+(8, 8, 1, 1), #pzs: 8, ts: 54, cpu_time: 0:00:13.187413, seed: 3
+(7, 7, 1, 1), #pzs: 8, ts: 37, cpu_time: 0:00:05.954712, seed: 8
+(7, 7, 1, 1), #pzs: 8, ts: 39, cpu_time: 0:00:06.385638, seed: 9
+(7, 7, 1, 1), #pzs: 8, average_ts: 40.1, average_cpu_time: 0:00:06.327294
+(8, 8, 1, 1), #pzs: 8, ts: 63, cpu_time: 0:00:15.286199, seed: 4
+(9, 9, 1, 1), #pzs: 8, ts: 68, cpu_time: 0:00:24.800365, seed: 2
+(8, 8, 1, 1), #pzs: 8, ts: 63, cpu_time: 0:00:15.163631, seed: 5
+(8, 8, 1, 1), #pzs: 8, ts: 58, cpu_time: 0:00:13.825290, seed: 6
+(9, 9, 1, 1), #pzs: 8, ts: 75, cpu_time: 0:00:26.864883, seed: 3
+(10, 10, 1, 1), #pzs: 8, ts: 91, cpu_time: 0:00:49.135688, seed: 1
+(8, 8, 1, 1), #pzs: 8, ts: 66, cpu_time: 0:00:15.727384, seed: 7
+(9, 9, 1, 1), #pzs: 8, ts: 62, cpu_time: 0:00:22.136458, seed: 4
+(8, 8, 1, 1), #pzs: 8, ts: 65, cpu_time: 0:00:15.348255, seed: 8
+(8, 8, 1, 1), #pzs: 8, ts: 66, cpu_time: 0:00:15.619487, seed: 9
+(8, 8, 1, 1), #pzs: 8, average_ts: 60.1, average_cpu_time: 0:00:14.441040
+(9, 9, 1, 1), #pzs: 8, ts: 76, cpu_time: 0:00:26.929679, seed: 5
+(10, 10, 1, 1), #pzs: 8, ts: 110, cpu_time: 0:00:57.764447, seed: 2
+(9, 9, 1, 1), #pzs: 8, ts: 62, cpu_time: 0:00:21.731005, seed: 6
+(9, 9, 1, 1), #pzs: 8, ts: 66, cpu_time: 0:00:23.162657, seed: 7
+(10, 10, 1, 1), #pzs: 8, ts: 99, cpu_time: 0:00:51.211163, seed: 3
+(9, 9, 1, 1), #pzs: 8, ts: 79, cpu_time: 0:00:27.447780, seed: 8
+(9, 9, 1, 1), #pzs: 8, ts: 71, cpu_time: 0:00:24.774298, seed: 9
+(9, 9, 1, 1), #pzs: 8, average_ts: 68.9, average_cpu_time: 0:00:24.510169
+(10, 10, 1, 1), #pzs: 8, ts: 101, cpu_time: 0:00:52.240847, seed: 4
+(10, 10, 1, 1), #pzs: 8, ts: 90, cpu_time: 0:00:46.655242, seed: 5
+(10, 10, 1, 1), #pzs: 8, ts: 93, cpu_time: 0:00:47.969653, seed: 6
+(10, 10, 1, 1), #pzs: 8, ts: 90, cpu_time: 0:00:46.511781, seed: 7
+(10, 10, 1, 1), #pzs: 8, ts: 104, cpu_time: 0:00:53.549300, seed: 8
+(10, 10, 1, 1), #pzs: 8, ts: 90, cpu_time: 0:00:46.421073, seed: 9
+(10, 10, 1, 1), #pzs: 8, average_ts: 96.6, average_cpu_time: 0:00:50.377966

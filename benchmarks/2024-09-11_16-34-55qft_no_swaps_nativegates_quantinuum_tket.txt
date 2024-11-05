@@ -1,0 +1,2 @@
+(3, 3, 1, 1), #pzs: 1, ts: 349, seed: 0
+(3, 3, 1, 1), #pzs: 1, average_ts: 349.0, average_cpu_time: 0:00:19.956766

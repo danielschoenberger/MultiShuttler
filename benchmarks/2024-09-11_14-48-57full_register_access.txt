@@ -1,0 +1,4 @@
+(6, 6, 3, 3), #pzs: 5, ts: 112, seed: 0
+(6, 6, 3, 3), #pzs: 5, average_ts: 112.0, average_cpu_time: 0:00:40.785091
+(6, 6, 3, 3), #pzs: 6, ts: 115, seed: 0
+(6, 6, 3, 3), #pzs: 6, average_ts: 115.0, average_cpu_time: 0:00:41.748536

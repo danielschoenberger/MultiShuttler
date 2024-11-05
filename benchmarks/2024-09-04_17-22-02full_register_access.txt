@@ -1,0 +1,12 @@
+(3, 3, 1, 1), #pzs: 10, ts: 0, cpu_time: 0:00:00.127291, seed: 0
+(3, 3, 1, 1), #pzs: 10, ts: 1, cpu_time: 0:00:00.060257, seed: 1
+(3, 3, 1, 1), #pzs: 10, ts: 3, cpu_time: 0:00:00.093833, seed: 2
+(3, 3, 1, 1), #pzs: 10, ts: 0, cpu_time: 0:00:00.035529, seed: 3
+(3, 3, 1, 1), #pzs: 10, ts: 0, cpu_time: 0:00:00.038462, seed: 4
+(3, 3, 1, 1), #pzs: 10, average_ts: 0.0, average_cpu_time: 0:00:00.038462
+(3, 3, 2, 2), #pzs: 10, ts: 11, cpu_time: 0:00:00.446444, seed: 0
+(3, 3, 2, 2), #pzs: 10, ts: 9, cpu_time: 0:00:00.342109, seed: 1
+(3, 3, 2, 2), #pzs: 10, ts: 8, cpu_time: 0:00:00.325667, seed: 2
+(3, 3, 2, 2), #pzs: 10, ts: 6, cpu_time: 0:00:00.244670, seed: 3
+(3, 3, 2, 2), #pzs: 10, ts: 10, cpu_time: 0:00:00.363234, seed: 4
+(3, 3, 2, 2), #pzs: 10, average_ts: 10.0, average_cpu_time: 0:00:00.363234
