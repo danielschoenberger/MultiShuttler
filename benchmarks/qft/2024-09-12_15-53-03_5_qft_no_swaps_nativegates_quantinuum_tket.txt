@@ -1,0 +1,30 @@
+(4, 4, 1, 1), #pzs: 5, ts: 716, cpu_time: 0:00:30.193464, seed: 0
+(3, 3, 2, 2), #pzs: 5, ts: 1023, cpu_time: 0:00:49.925344, seed: 0
+(4, 4, 1, 1), #pzs: 5, ts: 750, cpu_time: 0:00:31.961335, seed: 1
+(3, 3, 2, 2), #pzs: 5, ts: 961, cpu_time: 0:00:42.213969, seed: 1
+(4, 4, 1, 1), #pzs: 5, ts: 813, cpu_time: 0:00:34.247373, seed: 2
+(4, 4, 1, 1), #pzs: 5, ts: 773, cpu_time: 0:00:33.522513, seed: 3
+(3, 3, 2, 2), #pzs: 5, ts: 1168, cpu_time: 0:00:53.303724, seed: 2
+(4, 4, 1, 1), #pzs: 5, ts: 707, cpu_time: 0:00:30.814097, seed: 4
+(4, 4, 1, 1), #pzs: 5, average_ts: 751.8, average_cpu_time: 0:00:32.147756
+(3, 3, 2, 2), #pzs: 5, ts: 1091, cpu_time: 0:00:50.012705, seed: 3
+(3, 3, 2, 2), #pzs: 5, ts: 998, cpu_time: 0:00:43.143599, seed: 4
+(3, 3, 2, 2), #pzs: 5, average_ts: 1048.2, average_cpu_time: 0:00:47.719868
+(3, 3, 3, 3), #pzs: 5, ts: 3732, cpu_time: 0:04:01.983135, seed: 0
+(4, 4, 2, 2), #pzs: 5, ts: 5448, cpu_time: 0:07:56.426479, seed: 0
+(3, 3, 3, 3), #pzs: 5, ts: 3923, cpu_time: 0:04:01.737790, seed: 1
+(3, 3, 3, 3), #pzs: 5, ts: 3994, cpu_time: 0:04:07.117974, seed: 2
+(4, 4, 2, 2), #pzs: 5, ts: 5408, cpu_time: 0:07:35.080811, seed: 1
+(3, 3, 3, 3), #pzs: 5, ts: 4098, cpu_time: 0:04:16.372193, seed: 3
+(3, 3, 3, 3), #pzs: 5, ts: 4009, cpu_time: 0:04:12.991429, seed: 4
+(3, 3, 3, 3), #pzs: 5, average_ts: 3951.2, average_cpu_time: 0:04:08.040504
+(4, 4, 2, 2), #pzs: 5, ts: 5390, cpu_time: 0:07:26.370085, seed: 2
+(4, 4, 2, 2), #pzs: 5, ts: 5840, cpu_time: 0:08:01.337859, seed: 3
+(4, 4, 2, 2), #pzs: 5, ts: 5612, cpu_time: 0:07:51.722659, seed: 4
+(4, 4, 2, 2), #pzs: 5, average_ts: 5539.6, average_cpu_time: 0:07:46.187579
+(4, 4, 3, 3), #pzs: 5, ts: 22562, cpu_time: 0:58:02.224320, seed: 0
+(4, 4, 3, 3), #pzs: 5, ts: 21842, cpu_time: 0:53:22.147877, seed: 1
+(4, 4, 3, 3), #pzs: 5, ts: 22697, cpu_time: 0:55:54.569628, seed: 2
+(4, 4, 3, 3), #pzs: 5, ts: 22395, cpu_time: 0:55:13.873254, seed: 3
+(4, 4, 3, 3), #pzs: 5, ts: 21818, cpu_time: 0:52:49.904766, seed: 4
+(4, 4, 3, 3), #pzs: 5, average_ts: 22262.8, average_cpu_time: 0:55:04.543969
